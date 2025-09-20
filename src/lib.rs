@@ -1,34 +1,40 @@
-use pest::Parser;
-use pest_derive::Parser;
+use chumsky::prelude::*;
 
-#[derive(Parser)]
-#[grammar = "grammar.pest"]
-pub struct KeystoneLang;
+#[derive(Debug,Clone)]
+enum Statement {
+    Print(Value),
+}
+
+#[derive(Debug,Clone)]
+enum Value {
+    Number(u32),
+    String(String),
+    Boolean(bool),
+}
+
+fn value_parser<'a>() -> impl Parser<'a, &'a str, Value, extra::Err<Simple<'a, char>>> {
+    just("true").to(Value::Boolean(true))
+}
+
+
+fn statement_parser<'a>() -> impl Parser<'a, &'a str, Statement, extra::Err<Simple<'a, char>>> {
+    just("print")
+        .padded()
+        .ignore_then(value_parser())
+        .map(Statement::Print)
+}
+
+fn program_parser<'a>() -> impl Parser<'a, &'a str, Vec<Statement>, extra::Err<Simple<'a, char>>> {
+    statement_parser()
+        .separated_by(text::newline())
+        .collect()
+        .then_ignore(end())
+}
 
 pub fn analyze() {
-    let input = r#"
-        x = 1 + 2
-        print x
-        loop 2
-            move "forward"
-            print "hello"
-        end
-    "#;
+    let parser = program_parser();
 
-    match KeystoneLang::parse(Rule::program, input) {
-        Ok(pairs) => {
-            for pair in pairs {
-                println!("Rule: {:?}", pair.as_rule());
-                println!("Text: {:?}", pair.as_str());
-
-                for inner in pair.into_inner() {
-                    println!("  Child Rule: {:?}", inner.as_rule());
-                    println!("  Child Text: {:?}", inner.as_str());
-                }
-            }
-        }
-        Err(e) => {
-            println!("Parse error: {}", e);
-        }
-    }
+    let input = r#"print true"#;
+    let output = parser.parse(input);
+    println!("{:?}", output);
 }
