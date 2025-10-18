@@ -15,5 +15,7 @@ pub fn run(input: &'static str) {
         }
         return;
     };
+    println!("{:?}",parsed);
     let checked = check(parsed);
+    println!("{:?}",checked);
 }

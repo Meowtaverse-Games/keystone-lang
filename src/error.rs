@@ -3,12 +3,16 @@ use crate::ast::*;
 #[derive(Debug, Clone)]
 pub enum TypeError {
     MismatchedTypes {
-        expected: Type,
-        found: Type,
-    },
-    InvalidOperator {
         op: Op,
-        lhs: Type,
-        rhs: Type,
-    }
+        left: Type,
+        right: Type
+    },
+    InvalidOperandType {
+        op: Op,
+        typ: Type
+    },
+    UnexpectedType {
+        statement: String,
+        found_type: Type,
+    },
 }
