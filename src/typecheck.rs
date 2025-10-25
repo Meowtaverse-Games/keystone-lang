@@ -8,6 +8,7 @@ fn expr_check(input:&Expr) -> Result<Type,TypeError>{
         Expr::Number(_) => Ok(Type::Number),
         Expr::Boolean(_) => Ok(Type::Boolean),
         Expr::Direction(_) => Ok(Type::Direction),
+        Expr::Var(_) => Ok(Type::Var),
         Expr::Binary { op, lhs, rhs } => {
             let left = expr_check(lhs)?;
             let right = expr_check(rhs)?;
@@ -25,8 +26,7 @@ fn expr_check(input:&Expr) -> Result<Type,TypeError>{
                         Op::Add => Ok(Type::String),
                         Op::Eq|Op::Neq => Ok(Type::Boolean),
                         _ => Err(TypeError::InvalidOperandType { op: op.clone(), typ: Type::String })
-                }
-                ,
+                },
                 Type::Boolean => match op{
                         Op::And|Op::Or => Ok(Type::Boolean),
                         _ => Err(TypeError::InvalidOperandType { op: op.clone(), typ: Type::Boolean })
@@ -45,14 +45,33 @@ pub fn check(input:&Vec<Statement>) -> Result<(),TypeError>{
             },
             Statement::Move(x) => {
                 let t = expr_check(x)?;
-                if t != Type::Direction {
+                if !matches!(t,Type::Direction|Type::Var) {
                     return Err(TypeError::UnexpectedType { statement: String::from("Move"), found_type: t });
                 }
             },
             Statement::Turn(x) => {
                 let t = expr_check(x)?;
-                if t != Type::Direction {
+                if !matches!(t,Type::Direction|Type::Var) {
                     return Err(TypeError::UnexpectedType { statement: String::from("Turn"), found_type: t });
+                }
+            },
+            Statement::Let(_,x) => {
+                expr_check(x)?;
+            },
+            Statement::Loop(x, y) => {
+                let t = expr_check(x)?;
+                if !matches!(t,Type::Number|Type::Var){
+                    return Err(TypeError::UnexpectedType { statement: String::from("Loop"), found_type: t });
+                } else{
+                    check(y)?
+                }
+            },
+            Statement::If(x, y) => {
+                let t = expr_check(x)?;
+                if !matches!(t,Type::Boolean|Type::Var){
+                    return Err(TypeError::UnexpectedType { statement: String::from("If"), found_type: t });
+                } else{
+                    check(y)?
                 }
             }
         }
