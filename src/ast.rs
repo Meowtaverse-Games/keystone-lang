@@ -23,7 +23,7 @@ pub enum Expr {
 }
 #[derive(Debug, Clone, PartialEq)]
 pub enum Type {
-    Number,String,Boolean,Direction,Side,Var
+    Number,String,Boolean,Direction,Side
 }
 
 #[derive(Debug, Clone)]

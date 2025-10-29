@@ -1,7 +1,7 @@
 use crate::ast::*;
 
 #[derive(Debug, Clone)]
-pub enum TypeError {
+pub enum Error {
     MismatchedTypes {
         op: Op,
         left: Type,
@@ -15,4 +15,11 @@ pub enum TypeError {
         statement: String,
         found_type: Type,
     },
+    SyntaxError {
+        messages: Vec<String>
+    },
+    NameError {
+        name: String
+    },
+    ZeroDivisionError
 }

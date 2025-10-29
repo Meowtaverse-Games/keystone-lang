@@ -1,4 +1,4 @@
-use chumsky::{prelude::*, text::{newline, whitespace}};
+use chumsky::{prelude::*, text::newline};
 use crate::ast::*;
 
 fn expr_parser<'a>() -> impl Parser<'a, &'a str, Expr, extra::Err<Simple<'a, char>>> {
@@ -28,14 +28,11 @@ fn expr_parser<'a>() -> impl Parser<'a, &'a str, Expr, extra::Err<Simple<'a, cha
         let down = just("down").to(Direction::Down);
         let dir = left.or(right).or(forward).or(back).or(up).or(down).map(Expr::Direction);
 
-        let var = any::<&str, extra::Err<Simple<char>>>()
-            .filter(|c: &char| c.is_alphanumeric() || *c == '_')
-            .repeated()
-            .collect::<String>()
-            .map(Expr::Var);
+        let var = text::ident::<&str, extra::Err<Simple<char>>>()
+        .map(|s: &str| Expr::Var(s.to_owned()));
 
-        let atom = boolean.or(number).or(string).or(dir).or(var)
-            .or(expr.clone().delimited_by(just('('), just(')')));
+        let atom = boolean.or(number).or(string).or(dir)
+            .or(expr.clone().delimited_by(just('('), just(')'))).or(var);
 
         let factor = atom.clone()
             .foldl(
@@ -167,14 +164,21 @@ fn statement_parser<'a>() -> impl Parser<'a, &'a str, Statement, extra::Err<Simp
             .map(|(cond, body)| Statement::If(cond, body));
 
 
-
         print.or(_move).or(turn).or(_let).or(_loop).or(_if).boxed()
     })
 }
 
+fn blank_line<'a>() -> impl Parser<'a, &'a str, (), extra::Err<Simple<'a, char>>> + Copy {
+    new_space()
+        .then_ignore(text::newline())
+        .ignored()
+}
+
 pub fn program_parser<'a>() -> impl Parser<'a, &'a str, Vec<Statement>, extra::Err<Simple<'a, char>>> {
+    let sep = blank_line().or(text::newline().ignored());
+
     statement_parser()
-        .separated_by(text::newline().ignored())
+        .separated_by(sep.repeated())
         .allow_trailing()
         .collect()
         .then_ignore(end())
