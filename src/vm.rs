@@ -2,7 +2,7 @@ use crate::ast::{Direction, Expr, Op, Side, Statement};
 use crate::context::RuntimeContext;
 use crate::error::Error;
 
-#[derive(Debug)]
+#[derive(Debug,Clone,PartialEq)]
 pub enum Event{
     Print(String),
     Move(Direction),
@@ -23,9 +23,23 @@ fn expr(input: Expr, ctx:&mut RuntimeContext) -> Result<Expr,Error>{
             match (l,r){
                 (Expr::Number(x),Expr::Number(y)) => {
                     match o{
-                        Op::Add => Ok(Expr::Number(x+y)),
+                        Op::Add => {
+                            let opt = x.checked_add(y);
+                            if let Some(n) = opt{
+                                Ok(Expr::Number(n))
+                            }else {
+                                Err(Error::TooLargeNumber)
+                            }
+                        },
                         Op::Sub => Ok(Expr::Number(x-y)),
-                        Op::Mul => Ok(Expr::Number(x*y)),
+                        Op::Mul => {
+                            let opt = x.checked_mul(y);
+                            if let Some(n) = opt{
+                                Ok(Expr::Number(n))
+                            }else {
+                                Err(Error::TooLargeNumber)
+                            }
+                        },
                         Op::Div => {
                             if y == 0 { Err(Error::ZeroDivisionError) }
                             else { Ok(Expr::Number(x/y)) }
@@ -51,6 +65,13 @@ fn expr(input: Expr, ctx:&mut RuntimeContext) -> Result<Expr,Error>{
                     match o{
                         Op::And => Ok(Expr::Boolean(x&&y)),
                         Op::Or => Ok(Expr::Boolean(x||y)),
+                        Op::Eq => Ok(Expr::Boolean(x==y)),
+                        Op::Neq => Ok(Expr::Boolean(x != y)),
+                        _ => unreachable!()
+                    }
+                },
+                (Expr::Direction(x),Expr::Direction(y)) => {
+                    match o{
                         Op::Eq => Ok(Expr::Boolean(x==y)),
                         Op::Neq => Ok(Expr::Boolean(x != y)),
                         _ => unreachable!()
@@ -124,7 +145,7 @@ fn statement(input: Statement, ctx:&mut RuntimeContext) -> Result<Vec<Event>,Err
         },
         Statement::Let(s, x) => {
             let rx = expr(x,ctx)?;
-            ctx.set(&s, rx);
+            ctx.set(&s, rx.clone());
             Ok(vec![Event::Let])
         }
     }

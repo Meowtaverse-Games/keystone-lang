@@ -9,9 +9,9 @@ use chumsky::prelude::*;
 use parser::program_parser as parser;
 use typecheck::check;
 use vm::run;
-use context::TypeContext;
+use context::{TypeContext,RuntimeContext};
 
-use crate::{context::RuntimeContext, error::Error, vm::Event};
+pub use {error::Error, vm::Event, ast::{Direction,Side,Type,Op}};
 
 pub fn eval(input: &'static str) -> Result<Vec<Event>,Error> {
     let parsed = parser().parse(input.trim());
@@ -22,8 +22,6 @@ pub fn eval(input: &'static str) -> Result<Vec<Event>,Error> {
         }
         return Err(Error::SyntaxError{ messages:msg });
     };
-    // println!("{:?}",parsed);
-    // println!("{:?}",checked);
     let mut type_ctx = TypeContext::new();
     check(parsed, &mut type_ctx)?;
     let mut runtime_ctx = RuntimeContext::new();

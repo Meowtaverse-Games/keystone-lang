@@ -1,6 +1,6 @@
 use crate::ast::*;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Error {
     MismatchedTypes {
         op: Op,
@@ -21,5 +21,6 @@ pub enum Error {
     NameError {
         name: String
     },
-    ZeroDivisionError
+    ZeroDivisionError,
+    TooLargeNumber,
 }

@@ -26,17 +26,17 @@ pub enum Type {
     Number,String,Boolean,Direction,Side
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Op {
     Add, Sub, Mul, Div,
     Eq, Neq, Lt, Gt, Le, Ge,
     And,Or
 }
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Direction {
     Left,Right,Forward,Back,Up,Down
 }
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Side{
     Left,Right
 }

@@ -38,7 +38,11 @@ fn expr_check(input:&Expr, ctx: &mut TypeContext) -> Result<Type,Error>{
                         Op::And|Op::Or => Ok(Type::Boolean),
                         Op::Eq|Op::Neq => Ok(Type::Boolean),
                         _ => Err(Error::InvalidOperandType { op: op.clone(), typ: Type::Boolean })
-                }
+                },
+                Type::Direction => match op{
+                        Op::Eq|Op::Neq => Ok(Type::Boolean),
+                        _ => Err(Error::InvalidOperandType { op: op.clone(), typ: Type::Direction })
+                },
                 other => Err(Error::InvalidOperandType { op: op.clone(), typ: other })
             }
         }
