@@ -7,9 +7,23 @@ fn expr_parser<'a>() -> impl Parser<'a, &'a str, Expr, extra::Err<Simple<'a, cha
             .to(Expr::Boolean(true))
             .or(just("false").to(Expr::Boolean(false)));
     
-        let number = text::int::<&'a str, extra::Err<Simple<'a, char>>>(10)
-            .map(|s: &str| Expr::Number(s.parse().unwrap()));
-    
+        let number = text::digits(10)
+            .then(
+                just('.')
+                    .then(text::digits(10)) // 小数点以下の数字
+                    .or_not()
+            )
+            .to_slice()
+            .map(|s: &str| {
+                if s.contains('.') {
+                    Expr::Float(s.parse().unwrap())
+                } else {
+                    Expr::Uint(s.parse().unwrap())
+                }
+            });
+
+
+
         let string = just::<char, &str, extra::Err<Simple<'a, char>>>('"')
             .ignore_then(
                 any::<_, extra::Err<Simple<char>>>()
@@ -126,6 +140,10 @@ fn statement_parser<'a>() -> impl Parser<'a, &'a str, Statement, extra::Err<Simp
             .padded_by(new_space())
             .ignore_then(expr_parser())
             .map(Statement::Turn);
+        let sleep = just("sleep")
+            .padded_by(new_space())
+            .ignore_then(expr_parser())
+            .map(Statement::Sleep);
         let _let = text::ident::<&str, extra::Err<Simple<char>>>()
             .padded_by(new_space()).then_ignore(just("=").padded_by(new_space()))
             .then(expr_parser())
@@ -164,7 +182,7 @@ fn statement_parser<'a>() -> impl Parser<'a, &'a str, Statement, extra::Err<Simp
             .map(|(cond, body)| Statement::If(cond, body));
 
 
-        print.or(_move).or(turn).or(_let).or(_loop).or(_if).boxed()
+        print.or(_move).or(turn).or(sleep).or(_let).or(_loop).or(_if).boxed()
     })
 }
 
@@ -180,6 +198,6 @@ pub fn program_parser<'a>() -> impl Parser<'a, &'a str, Vec<Statement>, extra::E
     statement_parser()
         .separated_by(sep.repeated())
         .allow_trailing()
-        .collect()
+        .collect() 
         .then_ignore(end())
 }

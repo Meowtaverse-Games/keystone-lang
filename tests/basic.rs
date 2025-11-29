@@ -2,14 +2,16 @@ use keystone_lang::{eval,Event,Direction,Side};
 
 #[test]
 fn statement() {
-    let cases: [(&str, &str, Vec<Event>); 8] = [
+    let cases: [(&str, &str, Vec<Event>); 10] = [
         ("print <String>",r#"print "Hello""#, vec![Event::Print("Hello".to_owned())]),
-        ("print <Number>",r#"print 30"#, vec![Event::Print("30".to_owned())]),
+        ("print <Uint>",r#"print 30"#, vec![Event::Print("30".to_owned())]),
+        ("print <Float>",r#"print 3.5"#, vec![Event::Print("3.5".to_owned())]),
         ("print <Boolean>",r#"print true"#, vec![Event::Print("true".to_owned())]),
         ("print <Direction>",r#"print up"#, vec![Event::Print("Up".to_owned())]),
         ("print <Side>",r#"print right"#, vec![Event::Print("Right".to_owned())]),
         ("move <Direction>",r#"move forward"#, vec![Event::Move(Direction::Forward)]),
         ("turn <Side>",r#"turn left"#, vec![Event::Turn(Side::Left)]),
+        ("sleep <Float>",r#"sleep 1.2"#, vec![Event::Sleep(1.2)]),
         ("<Var> = <Expr>",r#"name = "Taro""#, vec![Event::Let]),
     ];
 
@@ -58,18 +60,39 @@ fn super_statement() {
 }
 
 #[test]
-fn number() {
+fn uint() {
     let cases: [(&str, &str, Vec<Event>); 10] = [
-        ("<Number> + <Number>",r#"print 60+4"#, vec![Event::Print("64".to_owned())]),
-        ("<Number> - <Number>",r#"print 60-4"#, vec![Event::Print("56".to_owned())]),
-        ("<Number> * <Number>",r#"print 60*4"#, vec![Event::Print("240".to_owned())]),
-        ("<Number> / <Number>",r#"print 60/4"#, vec![Event::Print("15".to_owned())]),
-        ("<Number> == <Number>",r#"print 60==40"#, vec![Event::Print("false".to_owned())]),
-        ("<Number> != <Number>",r#"print 60!=40"#, vec![Event::Print("true".to_owned())]),
-        ("<Number> >= <Number>",r#"print 60>=40"#, vec![Event::Print("true".to_owned())]),
-        ("<Number> <= <Number>",r#"print 60<=40"#, vec![Event::Print("false".to_owned())]),
-        ("<Number> > <Number>",r#"print 60>40"#, vec![Event::Print("true".to_owned())]),
-        ("<Number> < <Number>",r#"print 60<40"#, vec![Event::Print("false".to_owned())]),
+        ("<Uint> + <Uint>",r#"print 60+4"#, vec![Event::Print("64".to_owned())]),
+        ("<Uint> - <Uint>",r#"print 60-4"#, vec![Event::Print("56".to_owned())]),
+        ("<Uint> * <Uint>",r#"print 60*4"#, vec![Event::Print("240".to_owned())]),
+        ("<Uint> / <Uint>",r#"print 60/4"#, vec![Event::Print("15".to_owned())]),
+        ("<Uint> == <Uint>",r#"print 60==40"#, vec![Event::Print("false".to_owned())]),
+        ("<Uint> != <Uint>",r#"print 60!=40"#, vec![Event::Print("true".to_owned())]),
+        ("<Uint> >= <Uint>",r#"print 60>=40"#, vec![Event::Print("true".to_owned())]),
+        ("<Uint> <= <Uint>",r#"print 60<=40"#, vec![Event::Print("false".to_owned())]),
+        ("<Uint> > <Uint>",r#"print 60>40"#, vec![Event::Print("true".to_owned())]),
+        ("<Uint> < <Uint>",r#"print 60<40"#, vec![Event::Print("false".to_owned())]),
+    ];
+
+    for (case, src, expected) in cases {
+        let result = eval(src).expect("eval failed");
+        assert_eq!(result, expected, "{case}");
+    }
+}
+
+#[test]
+fn float() {
+    let cases: [(&str, &str, Vec<Event>); 10] = [
+        ("<float> + <float>",r#"print 3.9+1.2"#, vec![Event::Print("5.1".to_owned())]),
+        ("<float> - <float>",r#"print 3.9-1.2"#, vec![Event::Print("2.7".to_owned())]),
+        ("<float> * <float>",r#"print 3.9*1.2"#, vec![Event::Print("4.68".to_owned())]),
+        ("<float> / <float>",r#"print 3.9/1.2"#, vec![Event::Print("3.25".to_owned())]),
+        ("<float> == <float>",r#"print 3.9==1.2"#, vec![Event::Print("false".to_owned())]),
+        ("<float> != <float>",r#"print 3.9!=1.2"#, vec![Event::Print("true".to_owned())]),
+        ("<float> >= <float>",r#"print 3.9>=1.2"#, vec![Event::Print("true".to_owned())]),
+        ("<float> <= <float>",r#"print 3.9<=1.2"#, vec![Event::Print("false".to_owned())]),
+        ("<float> > <float>",r#"print 3.9>1.2"#, vec![Event::Print("true".to_owned())]),
+        ("<float> < <float>",r#"print 3.9<1.2"#, vec![Event::Print("false".to_owned())]),
     ];
 
     for (case, src, expected) in cases {

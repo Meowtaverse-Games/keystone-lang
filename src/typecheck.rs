@@ -6,7 +6,8 @@ use crate::error::*;
 fn expr_check(input:&Expr, ctx: &mut TypeContext) -> Result<Type,Error>{
     match input{
         Expr::String(_) => Ok(Type::String),
-        Expr::Number(_) => Ok(Type::Number),
+        Expr::Uint(_) => Ok(Type::Uint),
+        Expr::Float(_) => Ok(Type::Float),
         Expr::Boolean(_) => Ok(Type::Boolean),
         Expr::Direction(_) => Ok(Type::Direction),
         Expr::Var(s) => {
@@ -24,10 +25,10 @@ fn expr_check(input:&Expr, ctx: &mut TypeContext) -> Result<Type,Error>{
             }
             let typ = left;
             match typ{
-                Type::Number => match op{
-                        Op::Add|Op::Sub|Op::Mul|Op::Div => Ok(Type::Number),
+                Type::Uint|Type::Float => match op{
+                        Op::Add|Op::Sub|Op::Mul|Op::Div => Ok(Type::Uint),
                         Op::Eq|Op::Neq|Op::Ge|Op::Le|Op::Gt|Op::Lt => Ok(Type::Boolean),
-                        _ => Err(Error::InvalidOperandType { op: op.clone(), typ: Type::Number })
+                        _ => Err(Error::InvalidOperandType { op: op.clone(), typ: Type::Uint })
                 },
                 Type::String => match op{
                         Op::Add => Ok(Type::String),
@@ -67,13 +68,19 @@ pub fn check(input:&Vec<Statement>, ctx: &mut TypeContext) -> Result<(),Error>{
                     return Err(Error::UnexpectedType { statement: String::from("Turn"), found_type: t });
                 }
             },
+            Statement::Sleep(x) => {
+                let t = expr_check(x, ctx)?;
+                if !matches!(t,Type::Float) {
+                    return Err(Error::UnexpectedType { statement: String::from("Sleep"), found_type: t });
+                }
+            },
             Statement::Let(s,x) => {
                 let t = expr_check(x, ctx)?;
                 ctx.set(s,t);
             },
             Statement::Loop(x, y) => {
                 let t = expr_check(x, ctx)?;
-                if !matches!(t,Type::Number){
+                if !matches!(t,Type::Uint){
                     return Err(Error::UnexpectedType { statement: String::from("Loop"), found_type: t });
                 } else{
                     check(y,ctx)?

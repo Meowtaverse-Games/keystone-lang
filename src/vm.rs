@@ -7,13 +7,15 @@ pub enum Event{
     Print(String),
     Move(Direction),
     Turn(Side),
+    Sleep(f32),
     Let
 }
 
 fn expr(input: Expr, ctx:&mut RuntimeContext) -> Result<Expr,Error>{
     match input{
         Expr::String(s) => Ok(Expr::String(String::from(s))),
-        Expr::Number(n) => Ok(Expr::Number(n)),
+        Expr::Uint(u) => Ok(Expr::Uint(u)),
+        Expr::Float(f) => Ok(Expr::Float(f)),
         Expr::Boolean(b) => Ok(Expr::Boolean(b)),
         Expr::Direction(d) => Ok(Expr::Direction(d)),
         Expr::Var(s) => Ok(ctx.get(&s).clone()),
@@ -21,28 +23,46 @@ fn expr(input: Expr, ctx:&mut RuntimeContext) -> Result<Expr,Error>{
             let l = expr(*l, ctx)?;
             let r = expr(*r, ctx)?;
             match (l,r){
-                (Expr::Number(x),Expr::Number(y)) => {
+                (Expr::Uint(x),Expr::Uint(y)) => {
                     match o{
                         Op::Add => {
                             let opt = x.checked_add(y);
                             if let Some(n) = opt{
-                                Ok(Expr::Number(n))
+                                Ok(Expr::Uint(n))
                             }else {
                                 Err(Error::TooLargeNumber)
                             }
                         },
-                        Op::Sub => Ok(Expr::Number(x-y)),
+                        Op::Sub => Ok(Expr::Uint(x-y)),
                         Op::Mul => {
                             let opt = x.checked_mul(y);
                             if let Some(n) = opt{
-                                Ok(Expr::Number(n))
+                                Ok(Expr::Uint(n))
                             }else {
                                 Err(Error::TooLargeNumber)
                             }
                         },
                         Op::Div => {
                             if y == 0 { Err(Error::ZeroDivisionError) }
-                            else { Ok(Expr::Number(x/y)) }
+                            else { Ok(Expr::Uint(x/y)) }
+                        },
+                        Op::Eq => Ok(Expr::Boolean(x==y)),
+                        Op::Neq => Ok(Expr::Boolean(x != y)),
+                        Op::Ge => Ok(Expr::Boolean(x >= y)),
+                        Op::Le => Ok(Expr::Boolean(x <= y)),
+                        Op::Gt => Ok(Expr::Boolean(x > y)),
+                        Op::Lt => Ok(Expr::Boolean(x < y)),
+                        _ => unreachable!()
+                    }
+                },
+                (Expr::Float(x),Expr::Float(y)) => {
+                    match o{
+                        Op::Add => Ok(Expr::Float(x+y)),
+                        Op::Sub => Ok(Expr::Float(x-y)),
+                        Op::Mul => Ok(Expr::Float(x*y)),
+                        Op::Div => {
+                            if y == 0. { Err(Error::ZeroDivisionError) }
+                            else { Ok(Expr::Float(x/y)) }
                         },
                         Op::Eq => Ok(Expr::Boolean(x==y)),
                         Op::Neq => Ok(Expr::Boolean(x != y)),
@@ -86,7 +106,8 @@ fn expr(input: Expr, ctx:&mut RuntimeContext) -> Result<Expr,Error>{
 fn stringize(input: &Expr) -> String{
     match input{
         Expr::String(e) => String::from(e),
-        Expr::Number(n) => n.to_string(),
+        Expr::Uint(u) => u.to_string(),
+        Expr::Float(f) => f.to_string(),
         Expr::Boolean(b) => b.to_string(),
         Expr::Direction(d) => String::from(match d{
             Direction::Forward => "Forward",
@@ -115,9 +136,13 @@ fn statement(input: Statement, ctx:&mut RuntimeContext) -> Result<Vec<Event>,Err
             Expr::Direction(Direction::Right) => Side::Right,
             _ => unreachable!()
         })]),
+        Statement::Sleep(x) => Ok(vec![Event::Sleep(match expr(x, ctx)? {
+            Expr::Float(f) => f,
+            _ => unreachable!()
+        })]),
         Statement::Loop(x, vs) => {
             let xn = expr(x,ctx)?;
-            if let Expr::Number(n) = xn{
+            if let Expr::Uint(n) = xn{
                 let mut events:Vec<Event> = Vec::new();
                 for _ in 0..n {
                     for i in &vs{

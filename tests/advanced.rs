@@ -27,6 +27,21 @@ fn var_combination(){
 }
 
 #[test]
+fn float_var(){
+    assert_eq!(eval(r#"
+        x = 1.8
+        print x
+        y = x * 2.0
+        print y
+    "#).expect("eval failed"),vec![
+        Event::Let,
+        Event::Print("1.8".to_owned()),
+        Event::Let,
+        Event::Print("3.6".to_owned())
+    ]);
+}
+
+#[test]
 fn loop_statements(){
     assert_eq!(eval(r#"
         loop 5
@@ -200,5 +215,16 @@ fn switch_direction(){
         Event::Let,
         Event::Let,
         Event::Move(Direction::Forward),
+    ]);
+}
+
+
+#[test]
+fn sleep_timer_step(){
+    assert_eq!(eval(r#"
+        d = 0.0
+        print d
+    "#).expect("eval failed"),vec![
+        Event::Let,Event::Sleep(0.0),
     ]);
 }

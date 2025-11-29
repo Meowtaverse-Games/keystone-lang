@@ -4,10 +4,10 @@ use keystone_lang::{Direction, Error, Event, Op, Side, Type, eval};
 fn unexpected_type() {
     let cases: [(&str, &str, Error); 6] = [
         ("move <String>",r#"move "Hello""#, Error::UnexpectedType { statement: String::from("Move"), found_type: Type::String }),
-        ("move <Number>",r#"move 30"#, Error::UnexpectedType { statement: String::from("Move"), found_type: Type::Number }),
+        ("move <Number>",r#"move 30"#, Error::UnexpectedType { statement: String::from("Move"), found_type: Type::Uint }),
         ("move <Boolean>",r#"move true"#, Error::UnexpectedType { statement: String::from("Move"), found_type: Type::Boolean }),
         ("turn <String>",r#"turn "Hello""#, Error::UnexpectedType { statement: String::from("Turn"), found_type: Type::String }),
-        ("turn <Number>",r#"turn 30"#, Error::UnexpectedType { statement: String::from("Turn"), found_type: Type::Number }),
+        ("turn <Number>",r#"turn 30"#, Error::UnexpectedType { statement: String::from("Turn"), found_type: Type::Uint }),
         ("turn <Boolean>",r#"turn true"#, Error::UnexpectedType { statement: String::from("Turn"), found_type: Type::Boolean }),
     ];
 
@@ -38,7 +38,7 @@ fn super_unexpected_type() {
             if 30
                 print "NG"
             end
-        "#, Error::UnexpectedType { statement: String::from("If"), found_type: Type::Number }),
+        "#, Error::UnexpectedType { statement: String::from("If"), found_type: Type::Uint }),
         (r#"
             if <Direction>
                 [STATEMENT]
@@ -87,11 +87,11 @@ fn super_unexpected_type() {
 #[test]
 fn mismatched_types() {
     let cases: [(&str, &str, Error); 6] = [
-        ("<String> + <Number>",r#"print "Hello"+100"#, Error::MismatchedTypes { op: Op::Add, left: Type::String, right: Type::Number }),
+        ("<String> + <Number>",r#"print "Hello"+100"#, Error::MismatchedTypes { op: Op::Add, left: Type::String, right: Type::Uint }),
         ("<String> + <Boolean>",r#"print "Hello"+true"#, Error::MismatchedTypes { op: Op::Add, left: Type::String, right: Type::Boolean }),
         ("<String> + <Direction>",r#"print "Hello"+right"#, Error::MismatchedTypes { op: Op::Add, left: Type::String, right: Type::Direction }),
-        ("<Number> + <Boolean>",r#"print 100+true"#, Error::MismatchedTypes { op: Op::Add, left: Type::Number, right: Type::Boolean }),
-        ("<Number> + <Direction>",r#"print 100+right"#, Error::MismatchedTypes { op: Op::Add, left: Type::Number, right: Type::Direction }),
+        ("<Number> + <Boolean>",r#"print 100+true"#, Error::MismatchedTypes { op: Op::Add, left: Type::Uint, right: Type::Boolean }),
+        ("<Number> + <Direction>",r#"print 100+right"#, Error::MismatchedTypes { op: Op::Add, left: Type::Uint, right: Type::Direction }),
         ("<Boolean> + <Direction>",r#"print true+right"#, Error::MismatchedTypes { op: Op::Add, left: Type::Boolean, right: Type::Direction }),
     ];
 
@@ -114,8 +114,8 @@ fn invalid_operand_type() {
         ("<String> <= <String>",r#"print "Hello,"<="World!""#, Error::InvalidOperandType { op: Op::Le, typ: Type::String }),
         ("<String> > <String>",r#"print "Hello,">"World!""#, Error::InvalidOperandType { op: Op::Gt, typ: Type::String }),
         ("<String> < <String>",r#"print "Hello,"<"World!""#, Error::InvalidOperandType { op: Op::Lt, typ: Type::String }),
-        ("<Number> and <Number>",r#"print 50 and 50"#, Error::InvalidOperandType { op: Op::And, typ: Type::Number }),
-        ("<Number> or <Number>",r#"print 50 or 50"#, Error::InvalidOperandType { op: Op::Or, typ: Type::Number }),
+        ("<Number> and <Number>",r#"print 50 and 50"#, Error::InvalidOperandType { op: Op::And, typ: Type::Uint }),
+        ("<Number> or <Number>",r#"print 50 or 50"#, Error::InvalidOperandType { op: Op::Or, typ: Type::Uint }),
         ("<Boolean> + <Boolean>",r#"print true+true"#, Error::InvalidOperandType { op: Op::Add, typ: Type::Boolean }),
         ("<Boolean> - <Boolean>",r#"print true-true"#, Error::InvalidOperandType { op: Op::Sub, typ: Type::Boolean }),
         ("<Boolean> * <Boolean>",r#"print true*true"#, Error::InvalidOperandType { op: Op::Mul, typ: Type::Boolean }),

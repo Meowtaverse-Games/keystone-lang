@@ -5,12 +5,14 @@ pub enum Statement {
     Turn(Expr),
     Let(String,Expr),
     Loop(Expr,Vec<Statement>),
-    If(Expr,Vec<Statement>)
+    If(Expr,Vec<Statement>),
+    Sleep(Expr)
 }
 
 #[derive(Debug, Clone)]
 pub enum Expr {
-    Number(u32),
+    Uint(u32),
+    Float(f32),
     String(String),
     Boolean(bool),
     Direction(Direction),
@@ -23,7 +25,7 @@ pub enum Expr {
 }
 #[derive(Debug, Clone, PartialEq)]
 pub enum Type {
-    Number,String,Boolean,Direction,Side
+    Uint,Float,String,Boolean,Direction,Side
 }
 
 #[derive(Debug, Clone, PartialEq)]
