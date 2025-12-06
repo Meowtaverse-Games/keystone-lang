@@ -107,7 +107,11 @@ fn stringize(input: &Expr) -> String{
     match input{
         Expr::String(e) => String::from(e),
         Expr::Uint(u) => u.to_string(),
-        Expr::Float(f) => f.to_string(),
+        Expr::Float(f) => {
+            let mut s = format!("{:.6}",f).trim_end_matches('0').to_string();
+            if s.ends_with('.') { s.push('0'); }
+            s
+        },
         Expr::Boolean(b) => b.to_string(),
         Expr::Direction(d) => String::from(match d{
             Direction::Forward => "Forward",

@@ -25,10 +25,15 @@ fn expr_check(input:&Expr, ctx: &mut TypeContext) -> Result<Type,Error>{
             }
             let typ = left;
             match typ{
-                Type::Uint|Type::Float => match op{
+                Type::Uint => match op{
                         Op::Add|Op::Sub|Op::Mul|Op::Div => Ok(Type::Uint),
                         Op::Eq|Op::Neq|Op::Ge|Op::Le|Op::Gt|Op::Lt => Ok(Type::Boolean),
                         _ => Err(Error::InvalidOperandType { op: op.clone(), typ: Type::Uint })
+                },
+                Type::Float => match op{
+                        Op::Add|Op::Sub|Op::Mul|Op::Div => Ok(Type::Float),
+                        Op::Eq|Op::Neq|Op::Ge|Op::Le|Op::Gt|Op::Lt => Ok(Type::Boolean),
+                        _ => Err(Error::InvalidOperandType { op: op.clone(), typ: Type::Float })
                 },
                 Type::String => match op{
                         Op::Add => Ok(Type::String),

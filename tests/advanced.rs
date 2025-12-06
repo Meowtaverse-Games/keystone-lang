@@ -219,12 +219,21 @@ fn switch_direction(){
 }
 
 
+
 #[test]
 fn sleep_timer_step(){
     assert_eq!(eval(r#"
         d = 0.0
-        print d
+        loop 5
+            d = d+0.5
+            sleep d
+        end
     "#).expect("eval failed"),vec![
-        Event::Let,Event::Sleep(0.0),
+        Event::Let,
+        Event::Let,Event::Sleep(0.5),
+        Event::Let,Event::Sleep(1.0),
+        Event::Let,Event::Sleep(1.5),
+        Event::Let,Event::Sleep(2.0),
+        Event::Let,Event::Sleep(2.5),
     ]);
 }

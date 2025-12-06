@@ -7,20 +7,17 @@ fn expr_parser<'a>() -> impl Parser<'a, &'a str, Expr, extra::Err<Simple<'a, cha
             .to(Expr::Boolean(true))
             .or(just("false").to(Expr::Boolean(false)));
     
-        let number = text::digits(10)
-            .then(
-                just('.')
-                    .then(text::digits(10)) // 小数点以下の数字
-                    .or_not()
-            )
+        let float = text::digits(10)
+            .then_ignore(just('.'))
+            .then(text::digits(10))
             .to_slice()
-            .map(|s: &str| {
-                if s.contains('.') {
-                    Expr::Float(s.parse().unwrap())
-                } else {
-                    Expr::Uint(s.parse().unwrap())
-                }
-            });
+            .map(|s: &str| Expr::Float(s.parse().unwrap()));
+
+        let uint = text::digits(10)
+            .to_slice().map(|s: &str| Expr::Uint(s.parse().unwrap()));
+
+        let number = float.or(uint);
+
 
 
 

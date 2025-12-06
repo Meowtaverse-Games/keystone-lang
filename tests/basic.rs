@@ -83,16 +83,16 @@ fn uint() {
 #[test]
 fn float() {
     let cases: [(&str, &str, Vec<Event>); 10] = [
-        ("<float> + <float>",r#"print 3.9+1.2"#, vec![Event::Print("5.1".to_owned())]),
-        ("<float> - <float>",r#"print 3.9-1.2"#, vec![Event::Print("2.7".to_owned())]),
-        ("<float> * <float>",r#"print 3.9*1.2"#, vec![Event::Print("4.68".to_owned())]),
-        ("<float> / <float>",r#"print 3.9/1.2"#, vec![Event::Print("3.25".to_owned())]),
-        ("<float> == <float>",r#"print 3.9==1.2"#, vec![Event::Print("false".to_owned())]),
-        ("<float> != <float>",r#"print 3.9!=1.2"#, vec![Event::Print("true".to_owned())]),
-        ("<float> >= <float>",r#"print 3.9>=1.2"#, vec![Event::Print("true".to_owned())]),
-        ("<float> <= <float>",r#"print 3.9<=1.2"#, vec![Event::Print("false".to_owned())]),
-        ("<float> > <float>",r#"print 3.9>1.2"#, vec![Event::Print("true".to_owned())]),
-        ("<float> < <float>",r#"print 3.9<1.2"#, vec![Event::Print("false".to_owned())]),
+        ("<Float> + <Float>",r#"print 3.9+1.2"#, vec![Event::Print("5.1".to_owned())]),
+        ("<Float> - <Float>",r#"print 3.9-1.2"#, vec![Event::Print("2.7".to_owned())]),
+        ("<Float> * <Float>",r#"print 3.9*1.2"#, vec![Event::Print("4.68".to_owned())]),
+        ("<Float> / <Float>",r#"print 3.9/1.2"#, vec![Event::Print("3.25".to_owned())]),
+        ("<Float> == <Float>",r#"print 3.9==1.2"#, vec![Event::Print("false".to_owned())]),
+        ("<Float> != <Float>",r#"print 3.9!=1.2"#, vec![Event::Print("true".to_owned())]),
+        ("<Float> >= <Float>",r#"print 3.9>=1.2"#, vec![Event::Print("true".to_owned())]),
+        ("<Float> <= <Float>",r#"print 3.9<=1.2"#, vec![Event::Print("false".to_owned())]),
+        ("<Float> > <Float>",r#"print 3.9>1.2"#, vec![Event::Print("true".to_owned())]),
+        ("<Float> < <Float>",r#"print 3.9<1.2"#, vec![Event::Print("false".to_owned())]),
     ];
 
     for (case, src, expected) in cases {
