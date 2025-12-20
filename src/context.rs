@@ -21,7 +21,7 @@ impl TypeContext {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 pub struct RuntimeContext {
     pub vars: HashMap<String, Expr>
 }

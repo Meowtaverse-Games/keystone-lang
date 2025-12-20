@@ -125,68 +125,148 @@ fn stringize(input: &Expr) -> String{
     }
 }
 
-fn statement(input: Statement, ctx:&mut RuntimeContext) -> Result<Vec<Event>,Error>{
-    match input{
-        Statement::Print(x) => {
-            let v = expr(x, ctx)?;
-            Ok(vec![Event::Print(stringize(&v))])
-        },
-        Statement::Move(x) => Ok(vec![Event::Move(match expr(x, ctx)? {
-            Expr::Direction(d) => d,
-            _ => unreachable!()
-        })]),
-        Statement::Turn(x) => Ok(vec![Event::Turn(match x {
-            Expr::Direction(Direction::Left) => Side::Left,
-            Expr::Direction(Direction::Right) => Side::Right,
-            _ => unreachable!()
-        })]),
-        Statement::Sleep(x) => Ok(vec![Event::Sleep(match expr(x, ctx)? {
-            Expr::Float(f) => f,
-            _ => unreachable!()
-        })]),
-        Statement::Loop(x, vs) => {
-            let xn = expr(x,ctx)?;
-            if let Expr::Uint(n) = xn{
-                let mut events:Vec<Event> = Vec::new();
-                for _ in 0..n {
-                    for i in &vs{
-                        events.extend(statement(i.clone(), ctx)?);
-                    }
-                }
-                Ok(events)
-            }else{
-                unreachable!()
-            }
-        },
-        Statement::If(x, vs) => {
-            let xb = expr(x,ctx)?;
-            if let Expr::Boolean(b) = xb{
-                let mut events:Vec<Event> = Vec::new();
-                if b {
-                    for i in &vs{
-                        events.extend(statement(i.clone(), ctx)?);
-                    }
-                }
-                Ok(events)
-            }else{
-                unreachable!()
-            }
-        },
-        Statement::Let(s, x) => {
-            let rx = expr(x,ctx)?;
-            ctx.set(&s, rx.clone());
-            Ok(vec![Event::Let])
+
+pub struct VM {
+    statements: Vec<Statement>,
+    context: RuntimeContext,
+}
+
+pub struct VMIterator {
+    execution_stack: Vec<ExecutionFrame>,
+    context: RuntimeContext,
+}
+
+#[derive(Clone)]
+enum ExecutionFrame {
+    Statement {
+        statements: Vec<Statement>,
+        index: usize,
+    },
+    Loop {
+        count: u32,
+        current: u32,
+        body: Vec<Statement>,
+    },
+}
+
+impl VM {
+    pub fn new(statements: Vec<Statement>, context: RuntimeContext) -> Self {
+        VM { statements, context }
+    }
+
+    pub fn run(self) -> VMIterator {
+        VMIterator {
+            execution_stack: vec![ExecutionFrame::Statement {
+                statements: self.statements,
+                index: 0,
+            }],
+            context: self.context,
         }
     }
 }
 
-pub fn run(input:Vec<Statement>, ctx:&mut RuntimeContext)->Result<Vec<Event>,Error>{
-    let mut events:Vec<Event> = Vec::new();
-    for i in input{
-        match statement(i, ctx){
-            Ok(mut r) => {events.append(&mut r)},
-            Err(e) => {return Err(e)}
+impl Iterator for VMIterator {
+    type Item = Result<Event, Error>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            let frame = self.execution_stack.last_mut()?;
+
+            match frame {
+                ExecutionFrame::Statement { statements, index } => {
+                    if *index >= statements.len() {
+                        self.execution_stack.pop();
+                        continue;
+                    }
+
+                    let stmt = statements[*index].clone();
+                    *index += 1;
+
+                    match self.process_statement(stmt) {
+                        Ok(Some(event)) => return Some(Ok(event)),
+                        Ok(None) => continue,
+                        Err(e) => return Some(Err(e)),
+                    }
+                }
+                ExecutionFrame::Loop { count, current, body } => {
+                    if *current >= *count {
+                        self.execution_stack.pop();
+                        continue;
+                    }
+
+                    *current += 1;
+
+                    let new_frame = ExecutionFrame::Statement {
+                        statements: body.clone(),
+                        index: 0,
+                    };
+
+                    self.execution_stack.pop();
+
+                    self.execution_stack.push(new_frame);
+                }
+            }
         }
     }
-    Ok(events)
+}
+
+impl VMIterator {
+    fn process_statement(&mut self, stmt: Statement) -> Result<Option<Event>, Error> {
+        match stmt {
+            Statement::Print(x) => {
+                let v = expr(x, &mut self.context)?;
+                Ok(Some(Event::Print(stringize(&v))))
+            }
+            Statement::Move(x) => Ok(Some(Event::Move(match expr(x, &mut self.context)? {
+                Expr::Direction(d) => d,
+                _ => unreachable!(),
+            }))),
+            Statement::Turn(x) => Ok(Some(Event::Turn(match x {
+                Expr::Direction(Direction::Left) => Side::Left,
+                Expr::Direction(Direction::Right) => Side::Right,
+                _ => unreachable!(),
+            }))),
+            Statement::Sleep(x) => Ok(Some(Event::Sleep(match expr(x, &mut self.context)? {
+                Expr::Float(f) => f,
+                _ => unreachable!(),
+            }))),
+            Statement::Loop(x, body) => {
+                let xn = expr(x, &mut self.context)?;
+                if let Expr::Uint(n) = xn {
+                    self.execution_stack.push(ExecutionFrame::Loop {
+                        count: n,
+                        current: 0,
+                        body,
+                    });
+                    Ok(None)
+                } else {
+                    unreachable!()
+                }
+            }
+            Statement::If(x, body) => {
+                let xb = expr(x, &mut self.context)?;
+                if let Expr::Boolean(b) = xb {
+                    if b {
+                        self.execution_stack.push(ExecutionFrame::Statement {
+                            statements: body,
+                            index: 0,
+                        });
+                    }
+                    Ok(None)
+                } else {
+                    unreachable!()
+                }
+            }
+            Statement::Let(s, x) => {
+                let rx = expr(x, &mut self.context)?;
+                self.context.set(&s, rx.clone());
+                Ok(Some(Event::Let))
+            }
+        }
+    }
+}
+
+pub fn run(input: Vec<Statement>, ctx: &mut RuntimeContext) -> Result<Vec<Event>, Error> {
+    let vm = VM::new(input, ctx.clone());
+    vm.run().collect()
 }
