@@ -1,4 +1,4 @@
-use keystone_lang::{Direction, Error, Event, Op, Side, Type, eval};
+use keystone_lang::{eval_all, Error, Op, Type};
 
 #[test]
 fn unexpected_type() {
@@ -14,7 +14,7 @@ fn unexpected_type() {
     ];
 
     for (case, src, expected) in cases {
-        if let Err(e) = eval(src){
+        if let Err(e) = eval_all(src){
             assert_eq!(e, expected, "{case}");
         }
     }
@@ -98,7 +98,7 @@ fn super_unexpected_type() {
     ];
 
     for (case, src, expected) in cases {
-        if let Err(e) = eval(src){
+        if let Err(e) = eval_all(src){
             assert_eq!(e, expected, "{case}");
         }
     }
@@ -120,7 +120,7 @@ fn mismatched_types() {
     ];
 
     for (case, src, expected) in cases {
-        if let Err(e) = eval(src){
+        if let Err(e) = eval_all(src){
             assert_eq!(e, expected, "{case}");
         }
     }
@@ -163,7 +163,7 @@ fn invalid_operand_type() {
     ];
 
     for (case, src, expected) in cases {
-        if let Err(e) = eval(src){
+        if let Err(e) = eval_all(src){
             assert_eq!(e, expected, "{case}");
         }
     }
@@ -181,7 +181,7 @@ fn name_error() {
     ];
 
     for (case, src, expected) in cases {
-        if let Err(e) = eval(src){
+        if let Err(e) = eval_all(src){
             assert_eq!(e, expected, "{case}");
         }
     }
@@ -198,7 +198,7 @@ fn zero_division_error() {
     ];
 
     for (case, src, expected) in cases {
-        if let Err(e) = eval(src){
+        if let Err(e) = eval_all(src){
             assert_eq!(e, expected, "{case}");
         }
     }
@@ -217,7 +217,7 @@ fn too_large_number() {
     ];
 
     for (case, src, expected) in cases {
-        if let Err(e) = eval(src){
+        if let Err(e) = eval_all(src){
             assert_eq!(e, expected, "{case}");
         }
     }

@@ -1,4 +1,4 @@
-use keystone_lang::{eval,Event,Direction,Side};
+use keystone_lang::{eval_all,Event,Direction,Side};
 
 #[test]
 fn statement() {
@@ -16,7 +16,7 @@ fn statement() {
     ];
 
     for (case, src, expected) in cases {
-        let result = eval(src).expect("eval failed");
+        let result = eval_all(src).expect("eval failed");
         assert_eq!(result, expected, "{case}");
     }
 }
@@ -54,7 +54,7 @@ fn super_statement() {
     ];
 
     for (case, src, expected) in cases {
-        let result = eval(src).expect("eval failed");
+        let result = eval_all(src).expect("eval failed");
         assert_eq!(result, expected, "{case}");
     }
 }
@@ -75,7 +75,7 @@ fn uint() {
     ];
 
     for (case, src, expected) in cases {
-        let result = eval(src).expect("eval failed");
+        let result = eval_all(src).expect("eval failed");
         assert_eq!(result, expected, "{case}");
     }
 }
@@ -96,7 +96,7 @@ fn float() {
     ];
 
     for (case, src, expected) in cases {
-        let result = eval(src).expect("eval failed");
+        let result = eval_all(src).expect("eval failed");
         assert_eq!(result, expected, "{case}");
     }
 }
@@ -110,7 +110,7 @@ fn string() {
     ];
 
     for (case, src, expected) in cases {
-        let result = eval(src).expect("eval failed");
+        let result = eval_all(src).expect("eval failed");
         assert_eq!(result, expected, "{case}");
     }
 }
@@ -126,7 +126,7 @@ fn boolean() {
     ];
 
     for (case, src, expected) in cases {
-        let result = eval(src).expect("eval failed");
+        let result = eval_all(src).expect("eval failed");
         assert_eq!(result, expected, "{case}");
     }
 }

@@ -1,8 +1,8 @@
-use keystone_lang::{eval,Event,Direction,Side};
+use keystone_lang::{eval_all,Event,Direction};
 
 #[test]
 fn var_use(){
-    assert_eq!(eval(r#"
+    assert_eq!(eval_all(r#"
         n = 30
         print n
     "#).expect("eval failed"),vec![
@@ -13,7 +13,7 @@ fn var_use(){
 
 #[test]
 fn var_combination(){
-    assert_eq!(eval(r#"
+    assert_eq!(eval_all(r#"
         x = 3 + 5
         print x
         y = x * 2
@@ -28,7 +28,7 @@ fn var_combination(){
 
 #[test]
 fn float_var(){
-    assert_eq!(eval(r#"
+    assert_eq!(eval_all(r#"
         x = 1.8
         print x
         y = x * 2.0
@@ -43,7 +43,7 @@ fn float_var(){
 
 #[test]
 fn loop_statements(){
-    assert_eq!(eval(r#"
+    assert_eq!(eval_all(r#"
         loop 5
             print "Hello"
             print 5*2
@@ -64,7 +64,7 @@ fn loop_statements(){
 
 #[test]
 fn if_var_combination(){
-    assert_eq!(eval(r#"
+    assert_eq!(eval_all(r#"
         x = 10
         if x > 5
             print "Yes"
@@ -80,7 +80,7 @@ fn if_var_combination(){
 
 #[test]
 fn loop_loop(){
-    assert_eq!(eval(r#"
+    assert_eq!(eval_all(r#"
         loop 2
             loop 3
                 print "Hello"
@@ -99,7 +99,7 @@ fn loop_loop(){
 
 #[test]
 fn if_if(){
-    assert_eq!(eval(r#"
+    assert_eq!(eval_all(r#"
         x = 30
         if x > 20
             if x < 40
@@ -121,7 +121,7 @@ fn if_if(){
 
 #[test]
 fn loop_if(){
-    assert_eq!(eval(r#"
+    assert_eq!(eval_all(r#"
         n = 2
         loop 4
             n = n*n
@@ -141,7 +141,7 @@ fn loop_if(){
 
 #[test]
 fn complex_binary(){
-    assert_eq!(eval(r#"
+    assert_eq!(eval_all(r#"
         n = (3+5)*8/2+50
         m = (n+8)/(15-5)+(5+1)*(2+3)/10-2
         if m*8 < n
@@ -156,7 +156,7 @@ fn complex_binary(){
 
 #[test]
 fn released_scope(){
-    assert_eq!(eval(r#"
+    assert_eq!(eval_all(r#"
         x = 0
         loop 3
             x = x + 1
@@ -173,7 +173,7 @@ fn released_scope(){
 
 #[test]
 fn switch_direction(){
-    assert_eq!(eval(r#"
+    assert_eq!(eval_all(r#"
         d = forward
         s = true
         loop 4
@@ -222,7 +222,7 @@ fn switch_direction(){
 
 #[test]
 fn sleep_timer_step(){
-    assert_eq!(eval(r#"
+    assert_eq!(eval_all(r#"
         d = 0.0
         loop 5
             d = d+0.5
