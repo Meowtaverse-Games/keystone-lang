@@ -1,6 +1,7 @@
 use crate::ast::{Direction, Expr, Op, Side, Statement};
 use crate::context::RuntimeContext;
 use crate::error::Error;
+use std::rc::Rc;
 
 #[derive(Debug,Clone,PartialEq)]
 pub enum Event{
@@ -133,13 +134,13 @@ pub struct EventIterator {
 #[derive(Clone)]
 enum ExecutionFrame {
     Statement {
-        statements: Vec<Statement>,
+        statements: Rc<Vec<Statement>>,
         index: usize,
     },
     Loop {
         count: u32,
         current: u32,
-        body: Vec<Statement>,
+        body: Rc<Vec<Statement>>,
     },
 }
 
@@ -147,7 +148,7 @@ impl EventIterator {
     pub fn new(statements: Vec<Statement>, ctx: RuntimeContext) -> Self {
         EventIterator {
             stack: vec![ExecutionFrame::Statement {
-                statements,
+                statements: Rc::new(statements),
                 index: 0,
             }],
             ctx,
@@ -191,7 +192,7 @@ impl EventIterator {
                     self.stack.push(ExecutionFrame::Loop {
                         count,
                         current: 0,
-                        body,
+                        body: Rc::new(body),
                     });
                 }
                 Ok(None)
@@ -203,7 +204,7 @@ impl EventIterator {
                 };
                 if condition {
                     self.stack.push(ExecutionFrame::Statement {
-                        statements: body,
+                        statements: Rc::new(body),
                         index: 0,
                     });
                 }
@@ -247,7 +248,7 @@ impl Iterator for EventIterator {
                 ExecutionFrame::Loop { count, current, body } => {
                     let current_iter = *current;
                     let total_count = *count;
-                    let body_clone = body.clone();
+                    let body_clone = Rc::clone(&body);
                     if current_iter >= total_count {
                         self.stack.pop();
                         continue;
