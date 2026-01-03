@@ -8,12 +8,12 @@ mod context;
 use chumsky::prelude::*;
 use parser::program_parser as parser;
 use typecheck::check;
-use vm::{run,EventIterator};
+use vm::run;
 use context::{TypeContext,RuntimeContext};
 
-pub use {error::Error, vm::Event, ast::{Direction,Side,Type,Op}};
+pub use {error::Error, vm::{Event,EventIterator}, ast::{Direction,Side,Type,Op}};
 
-pub fn eval(input: &'static str) -> Result<EventIterator, Error> {
+pub fn eval(input: &str) -> Result<EventIterator, Error> {
     let parsed = parser().parse(input.trim());
     let Some(parsed) = parsed.output() else {
         let mut msg:Vec<String> = Vec::new();
@@ -28,7 +28,7 @@ pub fn eval(input: &'static str) -> Result<EventIterator, Error> {
     Ok(run(parsed.to_owned(), runtime_ctx))
 }
 
-pub fn eval_all(input: &'static str) -> Result<Vec<Event>,Error> {
+pub fn eval_all(input: &str) -> Result<Vec<Event>,Error> {
     let events: Result<Vec<Event>, Error> = eval(input)?.collect();
     events
 }
