@@ -1,7 +1,7 @@
 use crate::ast::{Direction, Expr, Op, Side, Statement};
 use crate::context::RuntimeContext;
 use crate::error::Error;
-use std::rc::Rc;
+use std::sync::Arc;
 
 #[derive(Debug,Clone,PartialEq)]
 pub enum Event{
@@ -134,13 +134,13 @@ pub struct EventIterator {
 #[derive(Clone)]
 enum ExecutionFrame {
     Statement {
-        statements: Rc<Vec<Statement>>,
+        statements: Arc<Vec<Statement>>,
         index: usize,
     },
     Loop {
         count: u32,
         current: u32,
-        body: Rc<Vec<Statement>>,
+        body: Arc<Vec<Statement>>,
     },
 }
 
@@ -148,7 +148,7 @@ impl EventIterator {
     pub fn new(statements: Vec<Statement>, ctx: RuntimeContext) -> Self {
         EventIterator {
             stack: vec![ExecutionFrame::Statement {
-                statements: Rc::new(statements),
+                statements: Arc::new(statements),
                 index: 0,
             }],
             ctx,
@@ -192,7 +192,7 @@ impl EventIterator {
                     self.stack.push(ExecutionFrame::Loop {
                         count,
                         current: 0,
-                        body: Rc::new(body),
+                        body: Arc::new(body),
                     });
                 }
                 Ok(None)
@@ -204,7 +204,7 @@ impl EventIterator {
                 };
                 if condition {
                     self.stack.push(ExecutionFrame::Statement {
-                        statements: Rc::new(body),
+                        statements: Arc::new(body),
                         index: 0,
                     });
                 }
@@ -248,7 +248,7 @@ impl Iterator for EventIterator {
                 ExecutionFrame::Loop { count, current, body } => {
                     let current_iter = *current;
                     let total_count = *count;
-                    let body_clone = Rc::clone(&body);
+                    let body_clone = Arc::clone(&body);
                     if current_iter >= total_count {
                         self.stack.pop();
                         continue;
