@@ -127,6 +127,7 @@ fn stringize(input: &Expr) -> String{
     }
 }
 
+#[derive(Clone)]
 pub struct EventIterator {
     stack: Vec<ExecutionFrame>,
     ctx: RuntimeContext,
