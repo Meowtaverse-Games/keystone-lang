@@ -2,7 +2,7 @@ use keystone_lang::{eval_all, Error, Op, Type};
 
 #[test]
 fn unexpected_type() {
-    let cases: [(&str, &str, Error); 8] = [
+    let cases: [(&str, &str, Error); 12] = [
         ("move <String>",r#"move "Hello""#, Error::UnexpectedType { statement: String::from("Move"), found_type: Type::String }),
         ("move <Uint>",r#"move 30"#, Error::UnexpectedType { statement: String::from("Move"), found_type: Type::Uint }),
         ("move <Float>",r#"move 5.0"#, Error::UnexpectedType { statement: String::from("Move"), found_type: Type::Float }),
@@ -11,6 +11,10 @@ fn unexpected_type() {
         ("turn <Uint>",r#"turn 30"#, Error::UnexpectedType { statement: String::from("Turn"), found_type: Type::Uint }),
         ("turn <Float>",r#"turn 5.0"#, Error::UnexpectedType { statement: String::from("Turn"), found_type: Type::Float }),
         ("turn <Boolean>",r#"turn true"#, Error::UnexpectedType { statement: String::from("Turn"), found_type: Type::Boolean }),
+        ("dig <String>",r#"dig "Hello""#, Error::UnexpectedType { statement: String::from("Dig"), found_type: Type::String }),
+        ("dig <Uint>",r#"dig 30"#, Error::UnexpectedType { statement: String::from("Dig"), found_type: Type::Uint }),
+        ("dig <Float>",r#"dig 5.0"#, Error::UnexpectedType { statement: String::from("Dig"), found_type: Type::Float }),
+        ("dig <Boolean>",r#"dig true"#, Error::UnexpectedType { statement: String::from("Dig"), found_type: Type::Boolean }),
     ];
 
     for (case, src, expected) in cases {

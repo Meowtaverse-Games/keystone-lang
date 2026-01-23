@@ -2,7 +2,7 @@ use keystone_lang::{eval_all,Event,Direction,Side};
 
 #[test]
 fn statement() {
-    let cases: [(&str, &str, Vec<Event>); 10] = [
+    let cases: [(&str, &str, Vec<Event>); 11] = [
         ("print <String>",r#"print "Hello""#, vec![Event::Print("Hello".to_owned())]),
         ("print <Uint>",r#"print 30"#, vec![Event::Print("30".to_owned())]),
         ("print <Float>",r#"print 3.5"#, vec![Event::Print("3.5".to_owned())]),
@@ -11,6 +11,7 @@ fn statement() {
         ("print <Side>",r#"print right"#, vec![Event::Print("Right".to_owned())]),
         ("move <Direction>",r#"move forward"#, vec![Event::Move(Direction::Forward)]),
         ("turn <Side>",r#"turn left"#, vec![Event::Turn(Side::Left)]),
+        ("dig <Direction>",r#"dig back"#, vec![Event::Dig(Direction::Back)]),
         ("sleep <Float>",r#"sleep 1.2"#, vec![Event::Sleep(1.2)]),
         ("<Var> = <Expr>",r#"name = "Taro""#, vec![Event::Let]),
     ];

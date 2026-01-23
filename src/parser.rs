@@ -137,6 +137,10 @@ fn statement_parser<'a>() -> impl Parser<'a, &'a str, Statement, extra::Err<Simp
             .padded_by(new_space())
             .ignore_then(expr_parser())
             .map(Statement::Turn);
+        let dig = just("dig")
+            .padded_by(new_space())
+            .ignore_then(expr_parser())
+            .map(Statement::Dig);
         let sleep = just("sleep")
             .padded_by(new_space())
             .ignore_then(expr_parser())
@@ -179,7 +183,7 @@ fn statement_parser<'a>() -> impl Parser<'a, &'a str, Statement, extra::Err<Simp
             .map(|(cond, body)| Statement::If(cond, body));
 
 
-        print.or(_move).or(turn).or(sleep).or(_let).or(_loop).or(_if).boxed()
+        print.or(_move).or(turn).or(dig).or(sleep).or(_let).or(_loop).or(_if).boxed()
     })
 }
 

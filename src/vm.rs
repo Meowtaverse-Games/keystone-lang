@@ -8,6 +8,7 @@ pub enum Event{
     Print(String),
     Move(Direction),
     Turn(Side),
+    Dig(Direction),
     Sleep(f32),
     Let
 }
@@ -175,6 +176,13 @@ impl EventIterator {
                     _ => unreachable!()
                 };
                 Ok(Some(Event::Turn(side)))
+            },
+            Statement::Dig(x) => {
+                let d = match expr(x, &mut self.ctx)? {
+                    Expr::Direction(d) => d,
+                    _ => unreachable!()
+                };
+                Ok(Some(Event::Dig(d)))
             },
             Statement::Sleep(x) => {
                 let f = match expr(x, &mut self.ctx)? {

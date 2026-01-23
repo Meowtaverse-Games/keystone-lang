@@ -1,6 +1,6 @@
 use core::panic;
 
-use keystone_lang::{eval,Event,EventIterator,Error,Type};
+use keystone_lang::{eval,Event,EventIterator,Error};
 
 //helper(weak)
 fn next(iter: &mut EventIterator) -> Result<Event,Error> {

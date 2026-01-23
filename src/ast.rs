@@ -3,6 +3,7 @@ pub enum Statement {
     Print(Expr),
     Move(Expr),
     Turn(Expr),
+    Dig(Expr),
     Let(String,Expr),
     Loop(Expr,Vec<Statement>),
     If(Expr,Vec<Statement>),

@@ -73,6 +73,12 @@ pub fn check(input:&Vec<Statement>, ctx: &mut TypeContext) -> Result<(),Error>{
                     return Err(Error::UnexpectedType { statement: String::from("Turn"), found_type: t });
                 }
             },
+            Statement::Dig(x) => {
+                let t = expr_check(x, ctx)?;
+                if !matches!(t,Type::Direction) {
+                    return Err(Error::UnexpectedType { statement: String::from("Dig"), found_type: t });
+                }
+            },
             Statement::Sleep(x) => {
                 let t = expr_check(x, ctx)?;
                 if !matches!(t,Type::Float) {
