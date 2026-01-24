@@ -11,6 +11,10 @@ pub enum Error {
         op: Op,
         typ: Type
     },
+    InvalidUnaryOperandType{
+        op: UnaryOp,
+        typ: Type
+    },
     UnexpectedType {
         statement: String,
         found_type: Type,

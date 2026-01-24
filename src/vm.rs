@@ -1,4 +1,4 @@
-use crate::ast::{Direction, Expr, Op, Side, Statement};
+use crate::ast::{Direction, Expr, Op, Side, Statement, UnaryOp};
 use crate::context::RuntimeContext;
 use crate::error::Error;
 use std::sync::Arc;
@@ -21,6 +21,17 @@ fn expr(input: Expr, ctx:&mut RuntimeContext) -> Result<Expr,Error>{
         Expr::Boolean(b) => Ok(Expr::Boolean(b)),
         Expr::Direction(d) => Ok(Expr::Direction(d)),
         Expr::Var(s) => Ok(ctx.get(&s).clone()),
+        Expr::Unary { op, exp } => {
+            let x = expr(*exp, ctx)?;
+            match op{
+                UnaryOp::Not => {
+                    match x {
+                        Expr::Boolean(b) => Ok(Expr::Boolean(!b)),
+                        _ => unreachable!()
+                    }
+                }
+            }
+        },
         Expr::Binary { op:o, lhs:l, rhs:r } => {
             let l = expr(*l, ctx)?;
             let r = expr(*r, ctx)?;

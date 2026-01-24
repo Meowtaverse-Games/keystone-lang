@@ -17,6 +17,13 @@ fn expr_check(input:&Expr, ctx: &mut TypeContext) -> Result<Type,Error>{
                 None => Err(Error::NameError { name: s.to_owned() })
             }
         },
+        Expr::Unary { op, exp } => {
+            let typ = expr_check(exp, ctx)?;
+            match typ{
+                Type::Boolean => Ok(Type::Boolean),
+                _ => Err(Error::InvalidUnaryOperandType { op:op.clone(), typ })
+            }
+        },
         Expr::Binary { op, lhs, rhs } => {
             let left = expr_check(lhs,ctx)?;
             let right = expr_check(rhs,ctx)?;

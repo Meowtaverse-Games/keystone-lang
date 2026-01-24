@@ -18,6 +18,10 @@ pub enum Expr {
     Boolean(bool),
     Direction(Direction),
     Var(String),
+    Unary {
+        op: UnaryOp,
+        exp: Box<Expr>
+    },
     Binary {
         op: Op,
         lhs: Box<Expr>,
@@ -34,6 +38,10 @@ pub enum Op {
     Add, Sub, Mul, Div,
     Eq, Neq, Lt, Gt, Le, Ge,
     And,Or
+}
+#[derive(Debug, Clone, PartialEq)]
+pub enum UnaryOp {
+    Not
 }
 #[derive(Debug, Clone, PartialEq)]
 pub enum Direction {

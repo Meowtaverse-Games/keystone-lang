@@ -11,7 +11,7 @@ use typecheck::check;
 use vm::run;
 use context::{TypeContext,RuntimeContext};
 
-pub use {error::Error, vm::{Event,EventIterator}, ast::{Direction,Side,Type,Op}};
+pub use {error::Error, vm::{Event,EventIterator}, ast::{Direction,Side,Type,Op,UnaryOp}};
 
 pub fn eval(input: &str) -> Result<EventIterator, Error> {
     let parsed = parser().parse(input.trim());

@@ -1,7 +1,7 @@
 use chumsky::{prelude::*, text::newline};
 use crate::ast::*;
 
-fn expr_parser<'a>() -> impl Parser<'a, &'a str, Expr, extra::Err<Simple<'a, char>>> {
+fn expr_parser<'a>() -> impl Parser<'a, &'a str, Expr, extra::Err<Rich<'a, char>>> {
     recursive(|expr| {
         let boolean = just("true")
             .to(Expr::Boolean(true))
@@ -18,12 +18,9 @@ fn expr_parser<'a>() -> impl Parser<'a, &'a str, Expr, extra::Err<Simple<'a, cha
 
         let number = float.or(uint);
 
-
-
-
-        let string = just::<char, &str, extra::Err<Simple<'a, char>>>('"')
+        let string = just::<char, &str, extra::Err<Rich<'a, char>>>('"')
             .ignore_then(
-                any::<_, extra::Err<Simple<char>>>()
+                any::<_, extra::Err<Rich<char>>>()
                     .filter(|c| *c != '"')
                     .repeated()
                     .collect::<String>()
@@ -39,8 +36,14 @@ fn expr_parser<'a>() -> impl Parser<'a, &'a str, Expr, extra::Err<Simple<'a, cha
         let down = just("down").to(Direction::Down);
         let dir = left.or(right).or(forward).or(back).or(up).or(down).map(Expr::Direction);
 
-        let var = text::ident::<&str, extra::Err<Simple<char>>>()
-        .map(|s: &str| Expr::Var(s.to_owned()));
+        let var = text::ident::<&str, extra::Err<Rich<char>>>()
+        .try_map(|s, span| {
+            if is_reserved(s) {
+                Err(Rich::custom(span, format!("reserved word '{}' cannot be used as variable.",s)))
+            } else {
+                Ok(Expr::Var(s.to_owned()))
+            }
+        });
 
         let atom = boolean.or(number).or(string).or(dir)
             .or(expr.clone().delimited_by(just('('), just(')'))).or(var);
@@ -88,10 +91,18 @@ fn expr_parser<'a>() -> impl Parser<'a, &'a str, Expr, extra::Err<Simple<'a, cha
                 }
             );
 
-        let logic_and = comparison.clone()
+        let logic_not = recursive(|unary| {
+            text::keyword("not")
+                .padded()
+                .ignore_then(unary.clone())
+                .map(|expr| Expr::Unary { op: UnaryOp::Not, exp: Box::new(expr) })
+                .or(comparison.clone())
+        });
+
+        let logic_and = logic_not.clone()
             .foldl(
                 just("and").padded().to(Op::And)
-                .then(comparison.clone())
+                .then(logic_not.clone())
                 .repeated(),
                 |lhs,(op,rhs)| Expr::Binary{
                     op,
@@ -116,14 +127,14 @@ fn expr_parser<'a>() -> impl Parser<'a, &'a str, Expr, extra::Err<Simple<'a, cha
     })
 }
 
-fn new_space<'a>() -> impl Parser<'a, &'a str, (), extra::Err<Simple<'a, char>>> + Copy {
-    any::<&'a str, extra::Err<Simple<'a, char>>>()
+fn new_space<'a>() -> impl Parser<'a, &'a str, (), extra::Err<Rich<'a, char>>> + Copy {
+    any::<&'a str, extra::Err<Rich<'a, char>>>()
         .filter(|c: &char| *c == ' ' || *c == '\t')
         .ignored()
         .repeated()
 }
 
-fn statement_parser<'a>() -> impl Parser<'a, &'a str, Statement, extra::Err<Simple<'a, char>>> {
+fn statement_parser<'a>() -> impl Parser<'a, &'a str, Statement, extra::Err<Rich<'a, char>>> {
     recursive(|statement| {
         let print = just("print")
             .padded_by(new_space())
@@ -145,7 +156,7 @@ fn statement_parser<'a>() -> impl Parser<'a, &'a str, Statement, extra::Err<Simp
             .padded_by(new_space())
             .ignore_then(expr_parser())
             .map(Statement::Sleep);
-        let _let = text::ident::<&str, extra::Err<Simple<char>>>()
+        let _let = text::ident::<&str, extra::Err<Rich<char>>>()
             .padded_by(new_space()).then_ignore(just("=").padded_by(new_space()))
             .then(expr_parser())
             .map(|(name,expr)| Statement::Let(name.to_owned(), expr));
@@ -187,13 +198,23 @@ fn statement_parser<'a>() -> impl Parser<'a, &'a str, Statement, extra::Err<Simp
     })
 }
 
-fn blank_line<'a>() -> impl Parser<'a, &'a str, (), extra::Err<Simple<'a, char>>> + Copy {
+fn blank_line<'a>() -> impl Parser<'a, &'a str, (), extra::Err<Rich<'a, char>>> + Copy {
     new_space()
         .then_ignore(text::newline())
         .ignored()
 }
 
-pub fn program_parser<'a>() -> impl Parser<'a, &'a str, Vec<Statement>, extra::Err<Simple<'a, char>>> {
+fn is_reserved(s: &str) -> bool {
+    matches!(s,
+        "true" | "false" |
+        "not" | "and" | "or" |
+        "print" | "move" | "turn" | "dig" | "sleep" |
+        "if" | "loop" | "end" |
+        "left" | "right" | "forward" | "back" | "up" | "down"
+    )
+}
+
+pub fn program_parser<'a>() -> impl Parser<'a, &'a str, Vec<Statement>, extra::Err<Rich<'a, char>>> {
     let sep = blank_line().or(text::newline().ignored());
 
     statement_parser()

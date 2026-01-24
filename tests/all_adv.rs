@@ -118,6 +118,49 @@ fn if_if(){
     ]);
 }
 
+#[test]
+fn not_not(){
+    assert_eq!(eval_all(r#"
+        x = true
+        if not not x
+            print "na na..."
+        end
+    "#).expect("eval failed"),vec![
+        Event::Let,
+        Event::Print("na na...".to_owned())
+    ]);
+}
+
+#[test]
+fn not_toggle(){
+    assert_eq!(eval_all(r#"
+        z = true
+        loop 3
+            z = not z
+            if not z
+                print "Switching..."
+            end
+        end
+    "#).expect("eval failed"),vec![
+        Event::Let,
+        Event::Let,
+        Event::Print("Switching...".to_owned()),
+        Event::Let,
+        Event::Let,
+        Event::Print("Switching...".to_owned())
+    ]);
+}
+
+#[test]
+fn not_bin(){
+    assert_eq!(eval_all(r#"
+        if not (3 > 5)
+            print "3 is not greater than 5."
+        end
+    "#).expect("eval failed"),vec![
+        Event::Print("3 is not greater than 5.".to_owned())
+    ]);
+}
 
 #[test]
 fn loop_if(){

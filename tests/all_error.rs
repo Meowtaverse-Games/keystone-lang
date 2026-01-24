@@ -1,4 +1,4 @@
-use keystone_lang::{eval_all, Error, Op, Type};
+use keystone_lang::{eval_all, Error, Op, UnaryOp, Type};
 
 #[test]
 fn unexpected_type() {
@@ -173,6 +173,21 @@ fn invalid_operand_type() {
     }
 }
 
+#[test]
+fn invalid_unary_operand_type() {
+    let cases: [(&str, &str, Error); 4] = [
+        ("not <Uint>",r#"print not 30"#, Error::InvalidUnaryOperandType { op: UnaryOp::Not, typ: Type::Uint }),
+        ("not <Float>",r#"print not 3.5"#, Error::InvalidUnaryOperandType { op: UnaryOp::Not, typ: Type::Float }),
+        ("not <Direction>",r#"print not forward"#, Error::InvalidUnaryOperandType { op: UnaryOp::Not, typ: Type::Direction }),
+        ("not <String>",r#"print not "Hello""#, Error::InvalidUnaryOperandType { op: UnaryOp::Not, typ: Type::String })
+    ];
+
+    for (case, src, expected) in cases {
+        if let Err(e) = eval_all(src){
+            assert_eq!(e, expected, "{case}");
+        }
+    }
+}
 
 #[test]
 fn name_error() {

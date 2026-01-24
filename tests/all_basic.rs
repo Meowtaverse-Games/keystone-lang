@@ -119,9 +119,10 @@ fn string() {
 
 #[test]
 fn boolean() {
-    let cases: [(&str, &str, Vec<Event>); 4] = [
+    let cases: [(&str, &str, Vec<Event>); 5] = [
         ("<Boolean> and <Boolean>",r#"print true and false"#, vec![Event::Print("false".to_owned())]),
         ("<Boolean> or <Boolean>",r#"print true or false"#, vec![Event::Print("true".to_owned())]),
+        ("not <Boolean>",r#"print not false"#, vec![Event::Print("true".to_owned())]),
         ("<Boolean> == <Boolean>",r#"print true == false"#, vec![Event::Print("false".to_owned())]),
         ("<Boolean> != <Boolean>",r#"print true != false"#, vec![Event::Print("true".to_owned())]),
     ];
