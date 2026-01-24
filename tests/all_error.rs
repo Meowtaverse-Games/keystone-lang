@@ -241,3 +241,35 @@ fn too_large_number() {
         }
     }
 }
+
+#[test]
+fn reserved_words() {
+    let cases: [(&str, &str, Error); 19] = [
+        ("print = <Expr>",r#"print = "print""#, Error::SyntaxError { messages: vec![String::from("reserved word 'print' cannot be used as a variable.")] }),
+        ("move = <Expr>",r#"move = "move""#, Error::SyntaxError { messages: vec![String::from("reserved word 'move' cannot be used as a variable.")] }),
+        ("turn = <Expr>",r#"turn = "turn""#, Error::SyntaxError { messages: vec![String::from("reserved word 'turn' cannot be used as a variable.")] }),
+        ("sleep = <Expr>",r#"sleep = "sleep""#, Error::SyntaxError { messages: vec![String::from("reserved word 'sleep' cannot be used as a variable.")] }),
+        ("dig = <Expr>",r#"dig = "dig""#, Error::SyntaxError { messages: vec![String::from("reserved word 'dig' cannot be used as a variable.")] }),
+        ("sleep = <Expr>",r#"sleep = "sleep""#, Error::SyntaxError { messages: vec![String::from("reserved word 'sleep' cannot be used as a variable.")] }),
+        ("left = <Expr>",r#"left = "left""#, Error::SyntaxError { messages: vec![String::from("reserved word 'left' cannot be used as a variable.")] }),
+        ("right = <Expr>",r#"right = "right""#, Error::SyntaxError { messages: vec![String::from("reserved word 'right' cannot be used as a variable.")] }),
+        ("up = <Expr>",r#"up = "up""#, Error::SyntaxError { messages: vec![String::from("reserved word 'up' cannot be used as a variable.")] }),
+        ("down = <Expr>",r#"down = "down""#, Error::SyntaxError { messages: vec![String::from("reserved word 'down' cannot be used as a variable.")] }),
+        ("forward = <Expr>",r#"forward = "forward""#, Error::SyntaxError { messages: vec![String::from("reserved word 'forward' cannot be used as a variable.")] }),
+        ("back = <Expr>",r#"back = "back""#, Error::SyntaxError { messages: vec![String::from("reserved word 'back' cannot be used as a variable.")] }),
+        ("and = <Expr>",r#"and = "and""#, Error::SyntaxError { messages: vec![String::from("reserved word 'and' cannot be used as a variable.")] }),
+        ("or = <Expr>",r#"or = "or""#, Error::SyntaxError { messages: vec![String::from("reserved word 'or' cannot be used as a variable.")] }),
+        ("not = <Expr>",r#"not = "not""#, Error::SyntaxError { messages: vec![String::from("reserved word 'not' cannot be used as a variable.")] }),
+        ("true = <Expr>",r#"true = "true""#, Error::SyntaxError { messages: vec![String::from("reserved word 'true' cannot be used as a variable.")] }),
+        ("false = <Expr>",r#"false = "false""#, Error::SyntaxError { messages: vec![String::from("reserved word 'false' cannot be used as a variable.")] }),
+        ("if = <Expr>",r#"if = "if""#, Error::SyntaxError { messages: vec![String::from("reserved word 'if' cannot be used as a variable.")] }),
+        ("loop = <Expr>",r#"loop = "loop""#, Error::SyntaxError { messages: vec![String::from("reserved word 'loop' cannot be used as a variable.")] }),
+        // ("<String> * <String>",r#"print "Hello,"*"World!""#, Error::InvalidOperandType { op: Op::Mul, typ: Type::String }),
+    ];
+
+    for (case, src, expected) in cases {
+        if let Err(e) = eval_all(src){
+            assert_eq!(e, expected, "{case}");
+        }
+    }
+}

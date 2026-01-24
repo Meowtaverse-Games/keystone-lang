@@ -39,7 +39,7 @@ fn expr_parser<'a>() -> impl Parser<'a, &'a str, Expr, extra::Err<Rich<'a, char>
         let var = text::ident::<&str, extra::Err<Rich<char>>>()
         .try_map(|s, span| {
             if is_reserved(s) {
-                Err(Rich::custom(span, format!("reserved word '{}' cannot be used as variable.",s)))
+                Err(Rich::custom(span, format!("reserved word '{}' cannot be used as a variable.",s)))
             } else {
                 Ok(Expr::Var(s.to_owned()))
             }
