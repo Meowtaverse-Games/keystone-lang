@@ -96,6 +96,43 @@ fn loop_loop(){
     ]);
 }
 
+#[test]
+fn while_while(){
+    assert_eq!(eval_all(r#"
+        p = 0
+        q = 0
+        while p < 3
+            q = 0
+            while q < 2
+                print p+q
+                q = q + 1
+            end
+            p = p+1
+        end
+    "#).expect("eval failed"),vec![
+        Event::Let,
+        Event::Let,
+        Event::Let,
+        Event::Print("0".to_owned()),
+        Event::Let,
+        Event::Print("1".to_owned()),
+        Event::Let,
+        Event::Let,
+        Event::Let,
+        Event::Print("1".to_owned()),
+        Event::Let,
+        Event::Print("2".to_owned()),
+        Event::Let,
+        Event::Let,
+        Event::Let,
+        Event::Print("2".to_owned()),
+        Event::Let,
+        Event::Print("3".to_owned()),
+        Event::Let,
+        Event::Let,
+    ]);
+}
+
 
 #[test]
 fn if_if(){
@@ -278,5 +315,32 @@ fn sleep_timer_step(){
         Event::Let,Event::Sleep(1.5),
         Event::Let,Event::Sleep(2.0),
         Event::Let,Event::Sleep(2.5),
+    ]);
+}
+
+#[test]
+fn complex_while(){
+    assert_eq!(eval_all(r#"
+        x = 0
+        y = 0
+        while x < 5
+            x = x + 1
+        end
+        while y < 3
+            y = y + 1
+        end
+        print x+y
+    "#).expect("eval failed"),vec![
+        Event::Let,
+        Event::Let,
+        Event::Let,
+        Event::Let,
+        Event::Let,
+        Event::Let,
+        Event::Let,
+        Event::Let,
+        Event::Let,
+        Event::Let,
+        Event::Print("8".to_owned())
     ]);
 }

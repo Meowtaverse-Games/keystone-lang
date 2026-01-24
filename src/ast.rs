@@ -6,6 +6,7 @@ pub enum Statement {
     Dig(Expr),
     Let(String,Expr),
     Loop(Expr,Vec<Statement>),
+    While(Expr,Vec<Statement>),
     If(Expr,Vec<Statement>),
     Sleep(Expr)
 }

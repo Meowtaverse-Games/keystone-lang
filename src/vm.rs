@@ -155,6 +155,10 @@ enum ExecutionFrame {
         current: u32,
         body: Arc<Vec<Statement>>,
     },
+    While {
+        condition: Expr,
+        body: Arc<Vec<Statement>>,
+    },
 }
 
 impl EventIterator {
@@ -215,6 +219,13 @@ impl EventIterator {
                         body: Arc::new(body),
                     });
                 }
+                Ok(None)
+            },
+            Statement::While(x, body) => {
+                self.stack.push(ExecutionFrame::While {
+                    condition: x,
+                    body: Arc::new(body),
+                });
                 Ok(None)
             },
             Statement::If(x, body) => {
@@ -281,7 +292,24 @@ impl Iterator for EventIterator {
                         index: 0,
                     });
                     continue;
+                },
+                ExecutionFrame::While { condition, body } => {
+                    let body_clone = Arc::clone(&body);
+                    match expr(condition.clone(), &mut self.ctx) {
+                        Ok(Expr::Boolean(true)) => {
+                            self.stack.push(ExecutionFrame::Statement {
+                                statements: body_clone,
+                                index: 0,
+                            });
+                        }
+                        Ok(Expr::Boolean(false)) => {
+                            self.stack.pop();
+                        }
+                        _ => unreachable!(),
+                    }
+                    continue;
                 }
+
             }
         }
     }

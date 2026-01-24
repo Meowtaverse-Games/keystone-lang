@@ -104,6 +104,14 @@ pub fn check(input:&Vec<Statement>, ctx: &mut TypeContext) -> Result<(),Error>{
                     check(y,ctx)?
                 }
             },
+            Statement::While(x, y) => {
+                let t = expr_check(x, ctx)?;
+                if !matches!(t,Type::Boolean){
+                    return Err(Error::UnexpectedType { statement: String::from("While"), found_type: t });
+                } else{
+                    check(y,ctx)?
+                }
+            },
             Statement::If(x, y) => {
                 let t = expr_check(x, ctx)?;
                 if !matches!(t,Type::Boolean){

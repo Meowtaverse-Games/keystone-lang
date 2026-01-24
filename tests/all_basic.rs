@@ -24,7 +24,7 @@ fn statement() {
 
 #[test]
 fn super_statement() {
-    let cases: [(&str, &str, Vec<Event>); 3] = [
+    let cases: [(&str, &str, Vec<Event>); 4] = [
         (r#"
             if true
                 [STATEMENT]
@@ -52,6 +52,25 @@ fn super_statement() {
                 print "Ok"
             end
         "#, vec![Event::Print("Ok".to_owned());3]),
+        (r#"
+            while <Boolean>
+                [STATEMENT]
+            end
+        "#,r#"
+            x = 0
+            while x < 3
+                print "White"
+                x = x + 1
+            end
+        "#, vec![
+            Event::Let,
+            Event::Print("White".to_owned()),
+            Event::Let,
+            Event::Print("White".to_owned()),
+            Event::Let,
+            Event::Print("White".to_owned()),
+            Event::Let,
+        ]),
     ];
 
     for (case, src, expected) in cases {

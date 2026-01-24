@@ -176,6 +176,22 @@ fn statement_parser<'a>() -> impl Parser<'a, &'a str, Statement, extra::Err<Rich
             .then_ignore(new_space())
             .then_ignore(just("end").ignored())
             .map(|(count, body)| Statement::Loop(count, body));
+        let _while = just("while")
+            .padded_by(new_space())
+            .ignore_then(expr_parser())
+            .then_ignore(newline())
+            .then(
+                statement.clone()
+                    .padded_by(new_space())
+                    .then_ignore(text::newline())
+                    .repeated()
+                    .at_least(1)
+                    .collect::<Vec<_>>()
+            )
+            .then_ignore(text::newline().or_not())
+            .then_ignore(new_space())
+            .then_ignore(just("end").ignored())
+            .map(|(cond, body)| Statement::While(cond, body));
         let _if = just("if")
             .padded_by(new_space())
             .ignore_then(expr_parser())
@@ -194,7 +210,7 @@ fn statement_parser<'a>() -> impl Parser<'a, &'a str, Statement, extra::Err<Rich
             .map(|(cond, body)| Statement::If(cond, body));
 
 
-        print.or(_move).or(turn).or(dig).or(sleep).or(_let).or(_loop).or(_if).boxed()
+        print.or(_move).or(turn).or(dig).or(sleep).or(_let).or(_loop).or(_while).or(_if).boxed()
     })
 }
 
@@ -209,7 +225,7 @@ fn is_reserved(s: &str) -> bool {
         "true" | "false" |
         "not" | "and" | "or" |
         "print" | "move" | "turn" | "dig" | "sleep" |
-        "if" | "loop" | "end" |
+        "if" | "loop" | "while" | "end" |
         "left" | "right" | "forward" | "back" | "up" | "down"
     )
 }
