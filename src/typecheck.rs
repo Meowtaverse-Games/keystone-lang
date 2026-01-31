@@ -17,6 +17,16 @@ fn expr_check(input:&Expr, ctx: &mut TypeContext) -> Result<Type,Error>{
                 None => Err(Error::NameError { name: s.to_owned() })
             }
         },
+        Expr::Call { name, args } => {
+            let len = args.len() as u8;
+            match name.as_str() {
+                "is_touched"|"is_empty" => {
+                    if len == 0 { Ok(Type::Boolean) }
+                    else { Err(Error::ArgError { called: name.clone(), expected: 0, got: len }) }
+                },
+                _ => Err(Error::NameError { name: name.clone() })
+            }
+        },
         Expr::Unary { op, exp } => {
             let typ = expr_check(exp, ctx)?;
             match typ{

@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap,sync::Arc};
 
 use crate::ast::{Expr, Type};
 
@@ -41,4 +41,10 @@ impl RuntimeContext {
             None => unreachable!("undefined variable")
         }
     }
+}
+
+#[derive(Clone)]
+pub struct Builtins {
+    pub is_touched: Arc<dyn Fn() -> bool + Send + Sync>,
+    pub is_empty:   Arc<dyn Fn() -> bool + Send + Sync>,
 }

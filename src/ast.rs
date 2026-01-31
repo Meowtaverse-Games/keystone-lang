@@ -19,6 +19,10 @@ pub enum Expr {
     Boolean(bool),
     Direction(Direction),
     Var(String),
+    Call{
+        name:String,
+        args:Vec<Box<Expr>>
+    },
     Unary {
         op: UnaryOp,
         exp: Box<Expr>

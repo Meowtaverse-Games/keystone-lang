@@ -25,6 +25,11 @@ pub enum Error {
     NameError {
         name: String
     },
+    ArgError{
+        called: String,
+        expected: u8,
+        got: u8
+    },
     ZeroDivisionError,
     TooLargeNumber,
 }

@@ -1,5 +1,5 @@
 use crate::ast::{Direction, Expr, Op, Side, Statement, UnaryOp};
-use crate::context::RuntimeContext;
+use crate::context::{RuntimeContext, Builtins};
 use crate::error::Error;
 use std::sync::Arc;
 
@@ -13,7 +13,7 @@ pub enum Event{
     Let
 }
 
-fn expr(input: Expr, ctx:&mut RuntimeContext) -> Result<Expr,Error>{
+fn expr(input: Expr, ctx:&mut RuntimeContext, builtins: Builtins) -> Result<Expr,Error>{
     match input{
         Expr::String(s) => Ok(Expr::String(String::from(s))),
         Expr::Uint(u) => Ok(Expr::Uint(u)),
@@ -22,7 +22,7 @@ fn expr(input: Expr, ctx:&mut RuntimeContext) -> Result<Expr,Error>{
         Expr::Direction(d) => Ok(Expr::Direction(d)),
         Expr::Var(s) => Ok(ctx.get(&s).clone()),
         Expr::Unary { op, exp } => {
-            let x = expr(*exp, ctx)?;
+            let x = expr(*exp, ctx, builtins)?;
             match op{
                 UnaryOp::Not => {
                     match x {
@@ -33,8 +33,8 @@ fn expr(input: Expr, ctx:&mut RuntimeContext) -> Result<Expr,Error>{
             }
         },
         Expr::Binary { op:o, lhs:l, rhs:r } => {
-            let l = expr(*l, ctx)?;
-            let r = expr(*r, ctx)?;
+            let l = expr(*l, ctx, builtins)?;
+            let r = expr(*r, ctx, builtins)?;
             match (l,r){
                 (Expr::Uint(x),Expr::Uint(y)) => {
                     match o{
@@ -142,6 +142,7 @@ fn stringize(input: &Expr) -> String{
 pub struct EventIterator {
     stack: Vec<ExecutionFrame>,
     ctx: RuntimeContext,
+    builtins: Builtins
 }
 
 #[derive(Clone)]
@@ -162,24 +163,25 @@ enum ExecutionFrame {
 }
 
 impl EventIterator {
-    pub fn new(statements: Vec<Statement>, ctx: RuntimeContext) -> Self {
+    pub fn new(statements: Vec<Statement>, ctx: RuntimeContext, builtins: Builtins) -> Self {
         EventIterator {
             stack: vec![ExecutionFrame::Statement {
                 statements: Arc::new(statements),
                 index: 0,
             }],
             ctx,
+            builtins
         }
     }
 
     fn process_statement(&mut self, stmt: Statement) -> Result<Option<Event>, Error> {
         match stmt {
             Statement::Print(x) => {
-                let v = expr(x, &mut self.ctx)?;
+                let v = expr(x, &mut self.ctx,self.builtins)?;
                 Ok(Some(Event::Print(stringize(&v))))
             },
             Statement::Move(x) => {
-                let d = match expr(x, &mut self.ctx)? {
+                let d = match expr(x, &mut self.ctx,Arc::clone(self.builtins))? {
                     Expr::Direction(d) => d,
                     _ => unreachable!()
                 };
@@ -194,21 +196,21 @@ impl EventIterator {
                 Ok(Some(Event::Turn(side)))
             },
             Statement::Dig(x) => {
-                let d = match expr(x, &mut self.ctx)? {
+                let d = match expr(x, &mut self.ctx,Arc::clone(self.builtins))? {
                     Expr::Direction(d) => d,
                     _ => unreachable!()
                 };
                 Ok(Some(Event::Dig(d)))
             },
             Statement::Sleep(x) => {
-                let f = match expr(x, &mut self.ctx)? {
+                let f = match expr(x, &mut self.ctx,Arc::clone(self.builtins))? {
                     Expr::Float(f) => f,
                     _ => unreachable!()
                 };
                 Ok(Some(Event::Sleep(f)))
             },
             Statement::Loop(x, body) => {
-                let count = match expr(x, &mut self.ctx)? {
+                let count = match expr(x, &mut self.ctx,Arc::clone(self.builtins))? {
                     Expr::Uint(n) => n,
                     _ => unreachable!()
                 };
@@ -229,7 +231,7 @@ impl EventIterator {
                 Ok(None)
             },
             Statement::If(x, body) => {
-                let condition = match expr(x, &mut self.ctx)? {
+                let condition = match expr(x, &mut self.ctx,Arc::clone(self.builtins))? {
                     Expr::Boolean(b) => b,
                     _ => unreachable!()
                 };
@@ -242,7 +244,7 @@ impl EventIterator {
                 Ok(None)
             },
             Statement::Let(s, x) => {
-                let rx = expr(x, &mut self.ctx)?;
+                let rx = expr(x, &mut self.ctx,Arc::clone(self.builtins))?;
                 self.ctx.set(&s, rx);
                 Ok(Some(Event::Let))
             }
@@ -295,7 +297,7 @@ impl Iterator for EventIterator {
                 },
                 ExecutionFrame::While { condition, body } => {
                     let body_clone = Arc::clone(&body);
-                    match expr(condition.clone(), &mut self.ctx) {
+                    match expr(condition.clone(), &mut self.ctx,Arc::clone(self.builtins)) {
                         Ok(Expr::Boolean(true)) => {
                             self.stack.push(ExecutionFrame::Statement {
                                 statements: body_clone,
@@ -315,6 +317,6 @@ impl Iterator for EventIterator {
     }
 }
 
-pub fn run(input: Vec<Statement>, ctx: RuntimeContext) -> EventIterator {
-    EventIterator::new(input, ctx)
+pub fn run(input: Vec<Statement>, ctx: RuntimeContext, builtins: Builtins) -> EventIterator {
+    EventIterator::new(input, ctx, builtins)
 }
