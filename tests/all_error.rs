@@ -1,4 +1,15 @@
-use keystone_lang::{eval_all, Error, Op, UnaryOp, Type};
+use keystone_lang::{eval_all, Error, Op, UnaryOp, Type, ExternalApi};
+
+struct MyApi;
+impl ExternalApi for MyApi {
+    fn is_touched(&self) -> bool {
+        true
+    }
+    fn is_empty(&self) -> bool {
+        true
+    }
+}
+const API:MyApi = MyApi;
 
 #[test]
 fn unexpected_type() {
@@ -18,7 +29,7 @@ fn unexpected_type() {
     ];
 
     for (case, src, expected) in cases {
-        if let Err(e) = eval_all(src){
+        if let Err(e) = eval_all(src,&API){
             assert_eq!(e, expected, "{case}");
         }
     }
@@ -102,7 +113,7 @@ fn super_unexpected_type() {
     ];
 
     for (case, src, expected) in cases {
-        if let Err(e) = eval_all(src){
+        if let Err(e) = eval_all(src,&API){
             assert_eq!(e, expected, "{case}");
         }
     }
@@ -124,7 +135,7 @@ fn mismatched_types() {
     ];
 
     for (case, src, expected) in cases {
-        if let Err(e) = eval_all(src){
+        if let Err(e) = eval_all(src,&API){
             assert_eq!(e, expected, "{case}");
         }
     }
@@ -167,7 +178,7 @@ fn invalid_operand_type() {
     ];
 
     for (case, src, expected) in cases {
-        if let Err(e) = eval_all(src){
+        if let Err(e) = eval_all(src,&API){
             assert_eq!(e, expected, "{case}");
         }
     }
@@ -183,7 +194,7 @@ fn invalid_unary_operand_type() {
     ];
 
     for (case, src, expected) in cases {
-        if let Err(e) = eval_all(src){
+        if let Err(e) = eval_all(src,&API){
             assert_eq!(e, expected, "{case}");
         }
     }
@@ -200,7 +211,7 @@ fn name_error() {
     ];
 
     for (case, src, expected) in cases {
-        if let Err(e) = eval_all(src){
+        if let Err(e) = eval_all(src,&API){
             assert_eq!(e, expected, "{case}");
         }
     }
@@ -217,7 +228,7 @@ fn zero_division_error() {
     ];
 
     for (case, src, expected) in cases {
-        if let Err(e) = eval_all(src){
+        if let Err(e) = eval_all(src,&API){
             assert_eq!(e, expected, "{case}");
         }
     }
@@ -236,7 +247,7 @@ fn too_large_number() {
     ];
 
     for (case, src, expected) in cases {
-        if let Err(e) = eval_all(src){
+        if let Err(e) = eval_all(src,&API){
             assert_eq!(e, expected, "{case}");
         }
     }
@@ -244,7 +255,7 @@ fn too_large_number() {
 
 #[test]
 fn reserved_words() {
-    let cases: [(&str, &str, Error); 19] = [
+    let cases: [(&str, &str, Error); 21] = [
         ("print = <Expr>",r#"print = "print""#, Error::SyntaxError { messages: vec![String::from("reserved word 'print' cannot be used as a variable.")] }),
         ("move = <Expr>",r#"move = "move""#, Error::SyntaxError { messages: vec![String::from("reserved word 'move' cannot be used as a variable.")] }),
         ("turn = <Expr>",r#"turn = "turn""#, Error::SyntaxError { messages: vec![String::from("reserved word 'turn' cannot be used as a variable.")] }),
@@ -264,11 +275,42 @@ fn reserved_words() {
         ("false = <Expr>",r#"false = "false""#, Error::SyntaxError { messages: vec![String::from("reserved word 'false' cannot be used as a variable.")] }),
         ("if = <Expr>",r#"if = "if""#, Error::SyntaxError { messages: vec![String::from("reserved word 'if' cannot be used as a variable.")] }),
         ("loop = <Expr>",r#"loop = "loop""#, Error::SyntaxError { messages: vec![String::from("reserved word 'loop' cannot be used as a variable.")] }),
-        // ("<String> * <String>",r#"print "Hello,"*"World!""#, Error::InvalidOperandType { op: Op::Mul, typ: Type::String }),
+        ("is_touched = <Expr>",r#"is_touched = "is_touched""#, Error::SyntaxError { messages: vec![String::from("reserved word 'is_touched' cannot be used as a variable.")] }),
+        ("is_empty = <Expr>",r#"is_empty = "is_empty""#, Error::SyntaxError { messages: vec![String::from("reserved word 'is_empty' cannot be used as a variable.")] }),
     ];
 
     for (case, src, expected) in cases {
-        if let Err(e) = eval_all(src){
+        if let Err(e) = eval_all(src,&API){
+            assert_eq!(e, expected, "{case}");
+        }
+    }
+}
+
+
+#[test]
+fn arg_error() {
+    struct TestApi;
+    impl ExternalApi for TestApi {
+        fn is_touched(&self) -> bool {
+            false
+        }
+        fn is_empty(&self) -> bool {
+            true
+        }
+    }
+    let api:TestApi = TestApi;
+
+    let cases: [(&str, &str, Error); 6] = [
+        ("is_touched(<Expr>)",r#"print is_touched(true)"#, Error::ArgError { called: String::from("is_touched()"), expected: 0, got: 1 }),
+        ("is_touched(<Expr>,<Expr>)",r#"print is_touched(true,true)"#, Error::ArgError { called: String::from("is_touched()"), expected: 0, got: 2 }),
+        ("is_touched(<Expr>,<Expr>,<Expr>)",r#"print is_touched(true,true,false)"#, Error::ArgError { called: String::from("is_touched()"), expected: 0, got: 3 }),
+        ("is_empty(<Expr>)",r#"print is_empty(true)"#, Error::ArgError { called: String::from("is_empty()"), expected: 0, got: 1 }),
+        ("is_empty(<Expr>,<Expr>)",r#"print is_empty(true,true)"#, Error::ArgError { called: String::from("is_empty()"), expected: 0, got: 2 }),
+        ("is_empty(<Expr>,<Expr>,<Expr>)",r#"print is_empty(true,false,false)"#, Error::ArgError { called: String::from("is_empty()"), expected: 0, got: 3 }),
+    ];
+
+    for (case, src, expected) in cases {
+        if let Err(e) = eval_all(src,&api){
             assert_eq!(e, expected, "{case}");
         }
     }

@@ -1,6 +1,15 @@
 use chumsky::{prelude::*, text::newline};
 use crate::ast::*;
 
+fn callee_parser<'a>() -> impl Parser<'a, &'a str, Callee, extra::Err<Rich<'a, char>>> {
+    text::ident::<&'a str, extra::Err<Rich<'a, char>>>()
+        .try_map(|name, span| match name {
+            "is_touched" => Ok(Callee::IsTouched),
+            "is_empty"   => Ok(Callee::IsEmpty),
+            _ => Err(Rich::custom(span, format!("unknown builtin function '{}'", name))),
+        })
+}
+
 fn expr_parser<'a>() -> impl Parser<'a, &'a str, Expr, extra::Err<Rich<'a, char>>> {
     recursive(|expr| {
         let boolean = just("true")
@@ -37,16 +46,32 @@ fn expr_parser<'a>() -> impl Parser<'a, &'a str, Expr, extra::Err<Rich<'a, char>
         let dir = left.or(right).or(forward).or(back).or(up).or(down).map(Expr::Direction);
 
         let var = text::ident::<&str, extra::Err<Rich<char>>>()
-        .try_map(|s, span| {
-            if is_reserved(s) {
-                Err(Rich::custom(span, format!("reserved word '{}' cannot be used as a variable.",s)))
-            } else {
-                Ok(Expr::Var(s.to_owned()))
-            }
-        });
+            .try_map(|s, span| {
+                if is_reserved(s) {
+                    Err(Rich::custom(span, format!("reserved word '{}' cannot be used as a variable.",s)))
+                } else {
+                    Ok(Expr::Var(s.to_owned()))
+                }
+            });
+
+        let args = expr.clone()
+            .padded()
+            .separated_by(just(',').padded())
+            .collect::<Vec<_>>()
+            .or_not()
+            .map(|opt| opt.unwrap_or_default());
+
+        let call = callee_parser()
+            .padded()
+            .then(args.delimited_by(just('(').padded(), just(')').padded_by(new_space())))
+            .map(|(callee, args)| Expr::Call {
+                callee,
+                args: args.into_iter().map(Box::new).collect(),
+            }).boxed();
+
 
         let atom = boolean.or(number).or(string).or(dir)
-            .or(expr.clone().delimited_by(just('('), just(')'))).or(var);
+            .or(call).or(expr.clone().delimited_by(just('('), just(')'))).or(var);
 
         let factor = atom.clone()
             .foldl(
@@ -226,7 +251,8 @@ fn is_reserved(s: &str) -> bool {
         "not" | "and" | "or" |
         "print" | "move" | "turn" | "dig" | "sleep" |
         "if" | "loop" | "while" | "end" |
-        "left" | "right" | "forward" | "back" | "up" | "down"
+        "left" | "right" | "forward" | "back" | "up" | "down" |
+        "is_touched" | "is_empty"
     )
 }
 

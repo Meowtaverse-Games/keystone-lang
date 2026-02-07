@@ -1,4 +1,4 @@
-use crate::ast::{Expr, Op, Statement, Type};
+use crate::ast::{Callee, Expr, Op, Statement, Type};
 use crate::context::TypeContext;
 use crate::error::*;
 
@@ -17,14 +17,17 @@ fn expr_check(input:&Expr, ctx: &mut TypeContext) -> Result<Type,Error>{
                 None => Err(Error::NameError { name: s.to_owned() })
             }
         },
-        Expr::Call { name, args } => {
+        Expr::Call { callee, args } => {
             let len = args.len() as u8;
-            match name.as_str() {
-                "is_touched"|"is_empty" => {
+            match callee {
+                Callee::IsTouched => {
                     if len == 0 { Ok(Type::Boolean) }
-                    else { Err(Error::ArgError { called: name.clone(), expected: 0, got: len }) }
+                    else { Err(Error::ArgError { called: String::from("is_touched()"), expected: 0, got: len }) }
                 },
-                _ => Err(Error::NameError { name: name.clone() })
+                Callee::IsEmpty => {
+                    if len == 0 { Ok(Type::Boolean) }
+                    else { Err(Error::ArgError { called: String::from("is_empty()"), expected: 0, got: len }) }
+                },
             }
         },
         Expr::Unary { op, exp } => {

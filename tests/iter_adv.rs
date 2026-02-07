@@ -1,4 +1,15 @@
-use keystone_lang::{eval,Event,EventIterator};
+use keystone_lang::{eval,Event,EventIterator,ExternalApi};
+
+struct MyApi;
+impl ExternalApi for MyApi {
+    fn is_touched(&self) -> bool {
+        true
+    }
+    fn is_empty(&self) -> bool {
+        true
+    }
+}
+const API:MyApi = MyApi;
 
 //helper
 fn next(iter: &mut EventIterator) -> Event {
@@ -10,7 +21,7 @@ fn var_use(){
     let mut iter = eval(r#"
         msg = "Succeed!"
         print msg
-    "#).expect("eval failed");
+    "#,&API).expect("eval failed");
     assert_eq!(next(&mut iter), Event::Let);
     assert_eq!(next(&mut iter), Event::Print("Succeed!".into()));
     assert!(iter.next().is_none());
@@ -23,7 +34,7 @@ fn var_override(){
         print msg
         msg = "Yas"
         print msg
-    "#).expect("eval failed");
+    "#,&API).expect("eval failed");
     assert_eq!(next(&mut iter), Event::Let);
     assert_eq!(next(&mut iter), Event::Print("Yes".into()));
     assert_eq!(next(&mut iter), Event::Let);
@@ -39,7 +50,7 @@ fn var_combination(){
         mom = "Mother"
         print mom
         print dad
-    "#).expect("eval failed");
+    "#,&API).expect("eval failed");
     assert_eq!(next(&mut iter), Event::Let);
     assert_eq!(next(&mut iter), Event::Print("Father".into()));
     assert_eq!(next(&mut iter), Event::Let);
@@ -57,7 +68,7 @@ fn loop_loop(){
             end
             print "after tomorrow"
         end
-    "#).expect("eval failed");
+    "#,&API).expect("eval failed");
     assert_eq!(next(&mut iter), Event::Print("The day ".into()));
     assert_eq!(next(&mut iter), Event::Print("The day ".into()));
     assert_eq!(next(&mut iter), Event::Print("after tomorrow".into()));
@@ -93,7 +104,7 @@ fn if_if(){
         if n == 3
             print "n is 3"
         end
-    "#).expect("eval failed");
+    "#,&API).expect("eval failed");
     assert_eq!(next(&mut iter), Event::Let);
     assert_eq!(next(&mut iter), Event::Print("n is 4".into()));
     assert!(iter.next().is_none());
@@ -114,7 +125,7 @@ fn loop_if(){
             end
             i = i*2
         end
-    "#).expect("eval failed");
+    "#,&API).expect("eval failed");
     assert_eq!(next(&mut iter), Event::Let);
     assert_eq!(next(&mut iter), Event::Print("2".into()));
     assert_eq!(next(&mut iter), Event::Print("is less than 10".into()));
@@ -142,7 +153,7 @@ fn different_scope(){
             x = x+1
         end
         print x
-    "#).expect("eval failed");
+    "#,&API).expect("eval failed");
     assert_eq!(next(&mut iter), Event::Let);
     assert_eq!(next(&mut iter), Event::Let);
     assert_eq!(next(&mut iter), Event::Let);
@@ -161,7 +172,7 @@ fn too_many_loop(){
             i = i+1
             print i
         end
-    "#).expect("eval failed");
+    "#,&API).expect("eval failed");
     assert_eq!(next(&mut iter), Event::Let);
     for i in 1..=10000 {
         assert_eq!(next(&mut iter), Event::Let);

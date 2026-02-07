@@ -1,5 +1,6 @@
-use crate::ast::{Direction, Expr, Op, Side, Statement, UnaryOp};
-use crate::context::{RuntimeContext, Builtins};
+use crate::api::ExternalApi;
+use crate::ast::{Callee, Direction, Expr, Op, Side, Statement, UnaryOp};
+use crate::context::RuntimeContext;
 use crate::error::Error;
 use std::sync::Arc;
 
@@ -13,7 +14,7 @@ pub enum Event{
     Let
 }
 
-fn expr(input: Expr, ctx:&mut RuntimeContext, builtins: Builtins) -> Result<Expr,Error>{
+fn expr<'a>(input: Expr, ctx:&mut RuntimeContext, api: &'a dyn ExternalApi) -> Result<Expr,Error>{
     match input{
         Expr::String(s) => Ok(Expr::String(String::from(s))),
         Expr::Uint(u) => Ok(Expr::Uint(u)),
@@ -21,8 +22,14 @@ fn expr(input: Expr, ctx:&mut RuntimeContext, builtins: Builtins) -> Result<Expr
         Expr::Boolean(b) => Ok(Expr::Boolean(b)),
         Expr::Direction(d) => Ok(Expr::Direction(d)),
         Expr::Var(s) => Ok(ctx.get(&s).clone()),
+        Expr::Call { callee, args } => {
+            match callee{
+                Callee::IsTouched => Ok(Expr::Boolean(api.is_touched())),
+                Callee::IsEmpty => Ok(Expr::Boolean(api.is_empty()))
+            }
+        },
         Expr::Unary { op, exp } => {
-            let x = expr(*exp, ctx, builtins)?;
+            let x = expr(*exp, ctx, api)?;
             match op{
                 UnaryOp::Not => {
                     match x {
@@ -33,8 +40,8 @@ fn expr(input: Expr, ctx:&mut RuntimeContext, builtins: Builtins) -> Result<Expr
             }
         },
         Expr::Binary { op:o, lhs:l, rhs:r } => {
-            let l = expr(*l, ctx, builtins)?;
-            let r = expr(*r, ctx, builtins)?;
+            let l = expr(*l, ctx, api)?;
+            let r = expr(*r, ctx, api)?;
             match (l,r){
                 (Expr::Uint(x),Expr::Uint(y)) => {
                     match o{
@@ -139,10 +146,10 @@ fn stringize(input: &Expr) -> String{
 }
 
 #[derive(Clone)]
-pub struct EventIterator {
+pub struct EventIterator<'a> {
     stack: Vec<ExecutionFrame>,
     ctx: RuntimeContext,
-    builtins: Builtins
+    api: &'a dyn ExternalApi
 }
 
 #[derive(Clone)]
@@ -162,26 +169,26 @@ enum ExecutionFrame {
     },
 }
 
-impl EventIterator {
-    pub fn new(statements: Vec<Statement>, ctx: RuntimeContext, builtins: Builtins) -> Self {
+impl<'a> EventIterator<'a> {
+    pub fn new(statements: Vec<Statement>, ctx: RuntimeContext, api: &'a dyn ExternalApi) -> Self {
         EventIterator {
             stack: vec![ExecutionFrame::Statement {
                 statements: Arc::new(statements),
                 index: 0,
             }],
             ctx,
-            builtins
+            api
         }
     }
 
     fn process_statement(&mut self, stmt: Statement) -> Result<Option<Event>, Error> {
         match stmt {
             Statement::Print(x) => {
-                let v = expr(x, &mut self.ctx,self.builtins)?;
+                let v = expr(x, &mut self.ctx, self.api)?;
                 Ok(Some(Event::Print(stringize(&v))))
             },
             Statement::Move(x) => {
-                let d = match expr(x, &mut self.ctx,Arc::clone(self.builtins))? {
+                let d = match expr(x, &mut self.ctx, self.api)? {
                     Expr::Direction(d) => d,
                     _ => unreachable!()
                 };
@@ -196,21 +203,21 @@ impl EventIterator {
                 Ok(Some(Event::Turn(side)))
             },
             Statement::Dig(x) => {
-                let d = match expr(x, &mut self.ctx,Arc::clone(self.builtins))? {
+                let d = match expr(x, &mut self.ctx, self.api)? {
                     Expr::Direction(d) => d,
                     _ => unreachable!()
                 };
                 Ok(Some(Event::Dig(d)))
             },
             Statement::Sleep(x) => {
-                let f = match expr(x, &mut self.ctx,Arc::clone(self.builtins))? {
+                let f = match expr(x, &mut self.ctx, self.api)? {
                     Expr::Float(f) => f,
                     _ => unreachable!()
                 };
                 Ok(Some(Event::Sleep(f)))
             },
             Statement::Loop(x, body) => {
-                let count = match expr(x, &mut self.ctx,Arc::clone(self.builtins))? {
+                let count = match expr(x, &mut self.ctx, self.api)? {
                     Expr::Uint(n) => n,
                     _ => unreachable!()
                 };
@@ -231,7 +238,7 @@ impl EventIterator {
                 Ok(None)
             },
             Statement::If(x, body) => {
-                let condition = match expr(x, &mut self.ctx,Arc::clone(self.builtins))? {
+                let condition = match expr(x, &mut self.ctx, self.api)? {
                     Expr::Boolean(b) => b,
                     _ => unreachable!()
                 };
@@ -244,7 +251,7 @@ impl EventIterator {
                 Ok(None)
             },
             Statement::Let(s, x) => {
-                let rx = expr(x, &mut self.ctx,Arc::clone(self.builtins))?;
+                let rx = expr(x, &mut self.ctx, self.api)?;
                 self.ctx.set(&s, rx);
                 Ok(Some(Event::Let))
             }
@@ -252,7 +259,7 @@ impl EventIterator {
     }
 }
 
-impl Iterator for EventIterator {
+impl<'a> Iterator for EventIterator<'a> {
     type Item = Result<Event, Error>;
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -297,7 +304,7 @@ impl Iterator for EventIterator {
                 },
                 ExecutionFrame::While { condition, body } => {
                     let body_clone = Arc::clone(&body);
-                    match expr(condition.clone(), &mut self.ctx,Arc::clone(self.builtins)) {
+                    match expr(condition.clone(), &mut self.ctx, self.api) {
                         Ok(Expr::Boolean(true)) => {
                             self.stack.push(ExecutionFrame::Statement {
                                 statements: body_clone,
@@ -317,6 +324,6 @@ impl Iterator for EventIterator {
     }
 }
 
-pub fn run(input: Vec<Statement>, ctx: RuntimeContext, builtins: Builtins) -> EventIterator {
-    EventIterator::new(input, ctx, builtins)
+pub fn run(input: Vec<Statement>, ctx: RuntimeContext, api:&dyn ExternalApi) -> EventIterator {
+    EventIterator::new(input, ctx, api)
 }

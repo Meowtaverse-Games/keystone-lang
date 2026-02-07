@@ -1,11 +1,22 @@
-use keystone_lang::{eval_all,Event,Direction};
+use keystone_lang::{eval_all,Event,Direction,ExternalApi};
+
+struct MyApi;
+impl ExternalApi for MyApi {
+    fn is_touched(&self) -> bool {
+        true
+    }
+    fn is_empty(&self) -> bool {
+        true
+    }
+}
+const API:MyApi = MyApi;
 
 #[test]
 fn var_use(){
     assert_eq!(eval_all(r#"
         n = 30
         print n
-    "#).expect("eval failed"),vec![
+    "#,&API).expect("eval failed"),vec![
         Event::Let,
         Event::Print("30".to_owned())
     ]);
@@ -18,7 +29,7 @@ fn var_combination(){
         print x
         y = x * 2
         print y
-    "#).expect("eval failed"),vec![
+    "#,&API).expect("eval failed"),vec![
         Event::Let,
         Event::Print("8".to_owned()),
         Event::Let,
@@ -33,7 +44,7 @@ fn float_var(){
         print x
         y = x * 2.0
         print y
-    "#).expect("eval failed"),vec![
+    "#,&API).expect("eval failed"),vec![
         Event::Let,
         Event::Print("1.8".to_owned()),
         Event::Let,
@@ -48,7 +59,7 @@ fn loop_statements(){
             print "Hello"
             print 5*2
         end
-    "#).expect("eval failed"),vec![
+    "#,&API).expect("eval failed"),vec![
         Event::Print("Hello".to_owned()),
         Event::Print("10".to_owned()),
         Event::Print("Hello".to_owned()),
@@ -72,7 +83,7 @@ fn if_var_combination(){
         if x <= 5
             print "No"
         end
-    "#).expect("eval failed"),vec![
+    "#,&API).expect("eval failed"),vec![
         Event::Let,
         Event::Print("Yes".to_owned())
     ]);
@@ -86,7 +97,7 @@ fn loop_loop(){
                 print "Hello"
             end
         end
-    "#).expect("eval failed"),vec![
+    "#,&API).expect("eval failed"),vec![
         Event::Print("Hello".to_owned()),
         Event::Print("Hello".to_owned()),
         Event::Print("Hello".to_owned()),
@@ -109,7 +120,7 @@ fn while_while(){
             end
             p = p+1
         end
-    "#).expect("eval failed"),vec![
+    "#,&API).expect("eval failed"),vec![
         Event::Let,
         Event::Let,
         Event::Let,
@@ -149,7 +160,7 @@ fn if_if(){
         if x < 20
             print "Small"
         end
-    "#).expect("eval failed"),vec![
+    "#,&API).expect("eval failed"),vec![
         Event::Let,
         Event::Print("Medium".to_owned())
     ]);
@@ -162,7 +173,7 @@ fn not_not(){
         if not not x
             print "na na..."
         end
-    "#).expect("eval failed"),vec![
+    "#,&API).expect("eval failed"),vec![
         Event::Let,
         Event::Print("na na...".to_owned())
     ]);
@@ -178,7 +189,7 @@ fn not_toggle(){
                 print "Switching..."
             end
         end
-    "#).expect("eval failed"),vec![
+    "#,&API).expect("eval failed"),vec![
         Event::Let,
         Event::Let,
         Event::Print("Switching...".to_owned()),
@@ -194,7 +205,7 @@ fn not_bin(){
         if not (3 > 5)
             print "3 is not greater than 5."
         end
-    "#).expect("eval failed"),vec![
+    "#,&API).expect("eval failed"),vec![
         Event::Print("3 is not greater than 5.".to_owned())
     ]);
 }
@@ -209,7 +220,7 @@ fn loop_if(){
                 print n
             end
         end
-    "#).expect("eval failed"),vec![
+    "#,&API).expect("eval failed"),vec![
         Event::Let,
         Event::Let,
         Event::Let,
@@ -227,7 +238,7 @@ fn complex_binary(){
         if m*8 < n
             print n-m*8
         end
-    "#).expect("eval failed"),vec![
+    "#,&API).expect("eval failed"),vec![
         Event::Let,
         Event::Let,
         Event::Print("2".to_owned())
@@ -242,7 +253,7 @@ fn released_scope(){
             x = x + 1
         end
         print x
-    "#).expect("eval failed"),vec![
+    "#,&API).expect("eval failed"),vec![
         Event::Let,
         Event::Let,
         Event::Let,
@@ -276,7 +287,7 @@ fn switch_direction(){
             s = true
             move d
         end
-    "#).expect("eval failed"),vec![
+    "#,&API).expect("eval failed"),vec![
         Event::Let,
         Event::Let,
         Event::Let,
@@ -308,7 +319,7 @@ fn sleep_timer_step(){
             d = d+0.5
             sleep d
         end
-    "#).expect("eval failed"),vec![
+    "#,&API).expect("eval failed"),vec![
         Event::Let,
         Event::Let,Event::Sleep(0.5),
         Event::Let,Event::Sleep(1.0),
@@ -330,7 +341,7 @@ fn complex_while(){
             y = y + 1
         end
         print x+y
-    "#).expect("eval failed"),vec![
+    "#,&API).expect("eval failed"),vec![
         Event::Let,
         Event::Let,
         Event::Let,
@@ -342,5 +353,57 @@ fn complex_while(){
         Event::Let,
         Event::Let,
         Event::Print("8".to_owned())
+    ]);
+}
+
+
+#[test]
+fn complex_api() {
+    struct TestApi;
+    impl ExternalApi for TestApi {
+        fn is_touched(&self) -> bool {
+            false
+        }
+        fn is_empty(&self) -> bool {
+            true
+        }
+    }
+    let api:TestApi = TestApi;
+
+    assert_eq!(eval_all(r#"
+        x = is_touched()
+        y = is_empty()
+        if x == y
+            print "x == y"
+        end
+        if not x == y
+            print "x != y"
+        end
+    "#,&api).expect("eval failed"),vec![
+        Event::Let,
+        Event::Let,
+        Event::Print("x != y".to_owned())
+    ]);
+}
+
+#[test]
+fn dynamic_api() {
+    struct TestApi;
+    impl ExternalApi for TestApi {
+        fn is_touched(&self) -> bool {
+            false
+        }
+        fn is_empty(&self) -> bool {
+            true
+        }
+    }
+    let api:TestApi = TestApi;
+
+    assert_eq!(eval_all(r#"
+        if not is_touched()
+            print "false"
+        end
+    "#,&api).expect("eval failed"),vec![
+        Event::Print("false".to_owned())
     ]);
 }

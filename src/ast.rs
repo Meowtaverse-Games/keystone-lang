@@ -20,7 +20,7 @@ pub enum Expr {
     Direction(Direction),
     Var(String),
     Call{
-        name:String,
+        callee:Callee,
         args:Vec<Box<Expr>>
     },
     Unary {
@@ -55,4 +55,8 @@ pub enum Direction {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Side{
     Left,Right
+}
+#[derive(Debug, Clone, PartialEq)]
+pub enum Callee{
+    IsTouched,IsEmpty
 }

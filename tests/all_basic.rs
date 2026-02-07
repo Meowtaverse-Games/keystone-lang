@@ -1,4 +1,15 @@
-use keystone_lang::{eval_all,Event,Direction,Side};
+use keystone_lang::{eval_all,Event,Direction,Side,ExternalApi};
+
+struct MyApi;
+impl ExternalApi for MyApi {
+    fn is_touched(&self) -> bool {
+        true
+    }
+    fn is_empty(&self) -> bool {
+        true
+    }
+}
+const API:MyApi = MyApi;
 
 #[test]
 fn statement() {
@@ -17,7 +28,7 @@ fn statement() {
     ];
 
     for (case, src, expected) in cases {
-        let result = eval_all(src).expect("eval failed");
+        let result = eval_all(src,&API).expect("eval failed");
         assert_eq!(result, expected, "{case}");
     }
 }
@@ -74,7 +85,7 @@ fn super_statement() {
     ];
 
     for (case, src, expected) in cases {
-        let result = eval_all(src).expect("eval failed");
+        let result = eval_all(src,&API).expect("eval failed");
         assert_eq!(result, expected, "{case}");
     }
 }
@@ -95,7 +106,7 @@ fn uint() {
     ];
 
     for (case, src, expected) in cases {
-        let result = eval_all(src).expect("eval failed");
+        let result = eval_all(src,&API).expect("eval failed");
         assert_eq!(result, expected, "{case}");
     }
 }
@@ -116,7 +127,7 @@ fn float() {
     ];
 
     for (case, src, expected) in cases {
-        let result = eval_all(src).expect("eval failed");
+        let result = eval_all(src,&API).expect("eval failed");
         assert_eq!(result, expected, "{case}");
     }
 }
@@ -130,7 +141,7 @@ fn string() {
     ];
 
     for (case, src, expected) in cases {
-        let result = eval_all(src).expect("eval failed");
+        let result = eval_all(src,&API).expect("eval failed");
         assert_eq!(result, expected, "{case}");
     }
 }
@@ -147,7 +158,31 @@ fn boolean() {
     ];
 
     for (case, src, expected) in cases {
-        let result = eval_all(src).expect("eval failed");
+        let result = eval_all(src,&API).expect("eval failed");
+        assert_eq!(result, expected, "{case}");
+    }
+}
+
+#[test]
+fn api() {
+    struct TestApi;
+    impl ExternalApi for TestApi {
+        fn is_touched(&self) -> bool {
+            true
+        }
+        fn is_empty(&self) -> bool {
+            false
+        }
+    }
+    let api:TestApi = TestApi;
+
+    let cases: [(&str, &str, Vec<Event>); 2] = [
+        ("is_touched()",r#"print is_touched()"#, vec![Event::Print("true".to_owned())]),
+        ("is_empty()",r#"print is_empty()"#, vec![Event::Print("false".to_owned())]),
+    ];
+
+    for (case, src, expected) in cases {
+        let result = eval_all(src,&api).expect("eval failed");
         assert_eq!(result, expected, "{case}");
     }
 }
