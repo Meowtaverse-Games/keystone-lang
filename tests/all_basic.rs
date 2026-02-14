@@ -1,18 +1,16 @@
+use std::sync::Arc;
+
 use keystone_lang::{eval_all,Event,Direction,Side,ExternalApi};
 
 struct MyApi;
 impl ExternalApi for MyApi {
-    fn is_touched(&self) -> bool {
-        true
-    }
-    fn is_empty(&self) -> bool {
-        true
-    }
+    fn is_touched(&self) -> bool { true }
+    fn is_empty(&self) -> bool { true }
 }
-const API:MyApi = MyApi;
 
 #[test]
 fn statement() {
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
     let cases: [(&str, &str, Vec<Event>); 11] = [
         ("print <String>",r#"print "Hello""#, vec![Event::Print("Hello".to_owned())]),
         ("print <Uint>",r#"print 30"#, vec![Event::Print("30".to_owned())]),
@@ -28,13 +26,14 @@ fn statement() {
     ];
 
     for (case, src, expected) in cases {
-        let result = eval_all(src,&API).expect("eval failed");
+        let result = eval_all(src,Arc::clone(&api)).expect("eval failed");
         assert_eq!(result, expected, "{case}");
     }
 }
 
 #[test]
 fn super_statement() {
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
     let cases: [(&str, &str, Vec<Event>); 4] = [
         (r#"
             if true
@@ -85,13 +84,14 @@ fn super_statement() {
     ];
 
     for (case, src, expected) in cases {
-        let result = eval_all(src,&API).expect("eval failed");
+        let result = eval_all(src,Arc::clone(&api)).expect("eval failed");
         assert_eq!(result, expected, "{case}");
     }
 }
 
 #[test]
 fn uint() {
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
     let cases: [(&str, &str, Vec<Event>); 10] = [
         ("<Uint> + <Uint>",r#"print 60+4"#, vec![Event::Print("64".to_owned())]),
         ("<Uint> - <Uint>",r#"print 60-4"#, vec![Event::Print("56".to_owned())]),
@@ -106,13 +106,14 @@ fn uint() {
     ];
 
     for (case, src, expected) in cases {
-        let result = eval_all(src,&API).expect("eval failed");
+        let result = eval_all(src,Arc::clone(&api)).expect("eval failed");
         assert_eq!(result, expected, "{case}");
     }
 }
 
 #[test]
 fn float() {
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
     let cases: [(&str, &str, Vec<Event>); 10] = [
         ("<Float> + <Float>",r#"print 3.9+1.2"#, vec![Event::Print("5.1".to_owned())]),
         ("<Float> - <Float>",r#"print 3.9-1.2"#, vec![Event::Print("2.7".to_owned())]),
@@ -127,13 +128,14 @@ fn float() {
     ];
 
     for (case, src, expected) in cases {
-        let result = eval_all(src,&API).expect("eval failed");
+        let result = eval_all(src,Arc::clone(&api)).expect("eval failed");
         assert_eq!(result, expected, "{case}");
     }
 }
 
 #[test]
 fn string() {
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
     let cases: [(&str, &str, Vec<Event>); 3] = [
         ("<String> + <String>",r#"print "hello,"+"world!""#, vec![Event::Print("hello,world!".to_owned())]),
         ("<String> == <String>",r#"print "hello,"=="world!""#, vec![Event::Print("false".to_owned())]),
@@ -141,7 +143,7 @@ fn string() {
     ];
 
     for (case, src, expected) in cases {
-        let result = eval_all(src,&API).expect("eval failed");
+        let result = eval_all(src,Arc::clone(&api)).expect("eval failed");
         assert_eq!(result, expected, "{case}");
     }
 }
@@ -149,6 +151,7 @@ fn string() {
 
 #[test]
 fn boolean() {
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
     let cases: [(&str, &str, Vec<Event>); 5] = [
         ("<Boolean> and <Boolean>",r#"print true and false"#, vec![Event::Print("false".to_owned())]),
         ("<Boolean> or <Boolean>",r#"print true or false"#, vec![Event::Print("true".to_owned())]),
@@ -158,7 +161,7 @@ fn boolean() {
     ];
 
     for (case, src, expected) in cases {
-        let result = eval_all(src,&API).expect("eval failed");
+        let result = eval_all(src,Arc::clone(&api)).expect("eval failed");
         assert_eq!(result, expected, "{case}");
     }
 }
@@ -174,7 +177,7 @@ fn api() {
             false
         }
     }
-    let api:TestApi = TestApi;
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(TestApi);
 
     let cases: [(&str, &str, Vec<Event>); 2] = [
         ("is_touched()",r#"print is_touched()"#, vec![Event::Print("true".to_owned())]),
@@ -182,7 +185,7 @@ fn api() {
     ];
 
     for (case, src, expected) in cases {
-        let result = eval_all(src,&api).expect("eval failed");
+        let result = eval_all(src,Arc::clone(&api)).expect("eval failed");
         assert_eq!(result, expected, "{case}");
     }
 }

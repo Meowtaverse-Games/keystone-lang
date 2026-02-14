@@ -1,16 +1,11 @@
 use keystone_lang::{Direction, Event, EventIterator, ExternalApi, eval};
-use std::cell::RefCell;
+use std::{sync::{Arc,Mutex}};
 
 struct MyApi;
 impl ExternalApi for MyApi {
-    fn is_touched(&self) -> bool {
-        true
-    }
-    fn is_empty(&self) -> bool {
-        true
-    }
+    fn is_touched(&self) -> bool { true }
+    fn is_empty(&self) -> bool { true }
 }
-const API:MyApi = MyApi;
 
 //helper
 fn next(iter: &mut EventIterator) -> Event {
@@ -19,19 +14,21 @@ fn next(iter: &mut EventIterator) -> Event {
 
 #[test]
 fn statement_single(){
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
     let mut iter = eval(r#"
         print "Yep"
-    "#,&API).expect("eval failed");
+    "#,Arc::clone(&api)).expect("eval failed");
     assert_eq!(next(&mut iter), Event::Print("Yep".into()));
     assert!(iter.next().is_none());
 }
 
 #[test]
 fn statement_multiple(){
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
     let mut iter = eval(r#"
         print "Yep"
         print "Yeah"
-    "#,&API).expect("eval failed");
+    "#,Arc::clone(&api)).expect("eval failed");
     assert_eq!(next(&mut iter), Event::Print("Yep".into()));
     assert_eq!(next(&mut iter), Event::Print("Yeah".into()));
     assert!(iter.next().is_none());
@@ -39,17 +36,19 @@ fn statement_multiple(){
 
 #[test]
 fn if_single(){
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
     let mut iter = eval(r#"
         if 100 < 1000
             print "100 < 1000 is true"
         end
-    "#,&API).expect("eval failed");
+    "#,Arc::clone(&api)).expect("eval failed");
     assert_eq!(next(&mut iter), Event::Print("100 < 1000 is true".into()));
     assert!(iter.next().is_none());
 }
 
 #[test]
 fn if_multiple(){
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
     let mut iter = eval(r#"
         if "Hello" != "Happy"
             print "Hello isn't Happy"
@@ -60,7 +59,7 @@ fn if_multiple(){
         if "Hoge" == "Hoge"
             print "but Hoge is Hoge"
         end
-    "#,&API).expect("eval failed");
+    "#,Arc::clone(&api)).expect("eval failed");
     assert_eq!(next(&mut iter), Event::Print("Hello isn't Happy".into()));
     assert_eq!(next(&mut iter), Event::Print("but Hoge is Hoge".into()));
     assert!(iter.next().is_none());
@@ -68,6 +67,7 @@ fn if_multiple(){
 
 #[test]
 fn if_multiple_multiple(){
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
     let mut iter = eval(r#"
         if true
             print "definitely works..."
@@ -77,7 +77,7 @@ fn if_multiple_multiple(){
             print "definitely won't work..."
             print "so there's no meaning"
         end
-    "#,&API).expect("eval failed");
+    "#,Arc::clone(&api)).expect("eval failed");
     assert_eq!(next(&mut iter), Event::Print("definitely works...".into()));
     assert_eq!(next(&mut iter), Event::Print("so there's no meaning".into()));
     assert!(iter.next().is_none());
@@ -85,11 +85,12 @@ fn if_multiple_multiple(){
 
 #[test]
 fn loop_single(){
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
     let mut iter = eval(r#"
         loop 3
             print "Woah"
         end
-    "#,&API).expect("eval failed");
+    "#,Arc::clone(&api)).expect("eval failed");
     assert_eq!(next(&mut iter), Event::Print("Woah".into()));
     assert_eq!(next(&mut iter), Event::Print("Woah".into()));
     assert_eq!(next(&mut iter), Event::Print("Woah".into()));
@@ -98,6 +99,7 @@ fn loop_single(){
 
 #[test]
 fn loop_multiple(){
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
     let mut iter = eval(r#"
         loop 3
             print "Yummy"
@@ -105,7 +107,7 @@ fn loop_multiple(){
         loop 2
             print "Delicious"
         end
-    "#,&API).expect("eval failed");
+    "#,Arc::clone(&api)).expect("eval failed");
     assert_eq!(next(&mut iter), Event::Print("Yummy".into()));
     assert_eq!(next(&mut iter), Event::Print("Yummy".into()));
     assert_eq!(next(&mut iter), Event::Print("Yummy".into()));
@@ -116,6 +118,7 @@ fn loop_multiple(){
 
 #[test]
 fn loop_multiple_multiple(){
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
     let mut iter = eval(r#"
         loop 2
             print "Good morning"
@@ -127,7 +130,7 @@ fn loop_multiple_multiple(){
             print "Hello"
             print "Hi"
         end
-    "#,&API).expect("eval failed");
+    "#,Arc::clone(&api)).expect("eval failed");
     assert_eq!(next(&mut iter), Event::Print("Good morning".into()));
     assert_eq!(next(&mut iter), Event::Print("Hello".into()));
     assert_eq!(next(&mut iter), Event::Print("Hi".into()));
@@ -145,6 +148,7 @@ fn loop_multiple_multiple(){
 
 #[test]
 fn mix(){
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
     let mut iter = eval(r#"
         print "Hello"
         loop 5
@@ -153,7 +157,7 @@ fn mix(){
         if "!"=="!"
             print "!"
         end
-    "#,&API).expect("eval failed");
+    "#,Arc::clone(&api)).expect("eval failed");
     assert_eq!(next(&mut iter), Event::Print("Hello".into()));
     assert_eq!(next(&mut iter), Event::Print("World".into()));
     assert_eq!(next(&mut iter), Event::Print("World".into()));
@@ -167,23 +171,25 @@ fn mix(){
 #[test]
 fn stateful_api(){
     struct TestApi {
-        touched: RefCell<bool>,
-        empty: RefCell<bool>,
+        touched: Mutex<bool>,
+        empty: Mutex<bool>,
     }
-
+    
     impl ExternalApi for TestApi {
         fn is_touched(&self) -> bool {
-            *self.touched.borrow()
+            *self.touched.lock().unwrap()
         }
         fn is_empty(&self) -> bool {
-            *self.empty.borrow()
+            *self.empty.lock().unwrap()
         }
     }
+    
+    let test_api = Arc::new(TestApi {
+        touched: Mutex::new(false),
+        empty: Mutex::new(true),
+    });
 
-    let api = TestApi {
-        touched: RefCell::new(false),
-        empty: RefCell::new(true),
-    };
+    let api_for_eval: Arc<dyn ExternalApi + Send + Sync> = test_api.clone();
 
     let mut iter = eval(r#"
         loop 5
@@ -194,10 +200,10 @@ fn stateful_api(){
                 move up
             end
         end
-    "#,&api).expect("eval failed");
+    "#,api_for_eval).expect("eval failed");
     assert_eq!(next(&mut iter), Event::Move(Direction::Right)); //frame 1 : not is_touched()
     assert_eq!(next(&mut iter), Event::Move(Direction::Right)); //frame 2 : not is_touched()
-    *api.touched.borrow_mut() = true;
+    *test_api.touched.lock().unwrap() = true;
     assert_eq!(next(&mut iter), Event::Move(Direction::Up)); //*frame 2 : is_touched()
     assert_eq!(next(&mut iter), Event::Move(Direction::Up)); //frame 3 : is_touched()
     assert_eq!(next(&mut iter), Event::Move(Direction::Up)); //frame 4 : is_touched()

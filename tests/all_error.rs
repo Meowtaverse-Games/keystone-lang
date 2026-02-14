@@ -1,18 +1,16 @@
+use std::sync::Arc;
+
 use keystone_lang::{eval_all, Error, Op, UnaryOp, Type, ExternalApi};
 
 struct MyApi;
 impl ExternalApi for MyApi {
-    fn is_touched(&self) -> bool {
-        true
-    }
-    fn is_empty(&self) -> bool {
-        true
-    }
+    fn is_touched(&self) -> bool { true }
+    fn is_empty(&self) -> bool { true }
 }
-const API:MyApi = MyApi;
 
 #[test]
 fn unexpected_type() {
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
     let cases: [(&str, &str, Error); 12] = [
         ("move <String>",r#"move "Hello""#, Error::UnexpectedType { statement: String::from("Move"), found_type: Type::String }),
         ("move <Uint>",r#"move 30"#, Error::UnexpectedType { statement: String::from("Move"), found_type: Type::Uint }),
@@ -29,7 +27,7 @@ fn unexpected_type() {
     ];
 
     for (case, src, expected) in cases {
-        if let Err(e) = eval_all(src,&API){
+        if let Err(e) = eval_all(src,Arc::clone(&api)){
             assert_eq!(e, expected, "{case}");
         }
     }
@@ -37,6 +35,7 @@ fn unexpected_type() {
 
 #[test]
 fn super_unexpected_type() {
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
     let cases: [(&str, &str, Error); 8] = [
         (r#"
             if <String>
@@ -113,7 +112,7 @@ fn super_unexpected_type() {
     ];
 
     for (case, src, expected) in cases {
-        if let Err(e) = eval_all(src,&API){
+        if let Err(e) = eval_all(src,Arc::clone(&api)){
             assert_eq!(e, expected, "{case}");
         }
     }
@@ -121,6 +120,7 @@ fn super_unexpected_type() {
 
 #[test]
 fn mismatched_types() {
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
     let cases: [(&str, &str, Error); 10] = [
         ("<String> + <Uint>",r#"print "Hello"+100"#, Error::MismatchedTypes { op: Op::Add, left: Type::String, right: Type::Uint }),
         ("<String> + <Float>",r#"print "Hello"+6.0"#, Error::MismatchedTypes { op: Op::Add, left: Type::String, right: Type::Float }),
@@ -135,7 +135,7 @@ fn mismatched_types() {
     ];
 
     for (case, src, expected) in cases {
-        if let Err(e) = eval_all(src,&API){
+        if let Err(e) = eval_all(src,Arc::clone(&api)){
             assert_eq!(e, expected, "{case}");
         }
     }
@@ -143,6 +143,7 @@ fn mismatched_types() {
 
 #[test]
 fn invalid_operand_type() {
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
     let cases: [(&str, &str, Error); 31] = [
         ("<String> - <String>",r#"print "Hello,"-"World!""#, Error::InvalidOperandType { op: Op::Sub, typ: Type::String }),
         ("<String> * <String>",r#"print "Hello,"*"World!""#, Error::InvalidOperandType { op: Op::Mul, typ: Type::String }),
@@ -178,7 +179,7 @@ fn invalid_operand_type() {
     ];
 
     for (case, src, expected) in cases {
-        if let Err(e) = eval_all(src,&API){
+        if let Err(e) = eval_all(src,Arc::clone(&api)){
             assert_eq!(e, expected, "{case}");
         }
     }
@@ -186,6 +187,7 @@ fn invalid_operand_type() {
 
 #[test]
 fn invalid_unary_operand_type() {
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
     let cases: [(&str, &str, Error); 4] = [
         ("not <Uint>",r#"print not 30"#, Error::InvalidUnaryOperandType { op: UnaryOp::Not, typ: Type::Uint }),
         ("not <Float>",r#"print not 3.5"#, Error::InvalidUnaryOperandType { op: UnaryOp::Not, typ: Type::Float }),
@@ -194,7 +196,7 @@ fn invalid_unary_operand_type() {
     ];
 
     for (case, src, expected) in cases {
-        if let Err(e) = eval_all(src,&API){
+        if let Err(e) = eval_all(src,Arc::clone(&api)){
             assert_eq!(e, expected, "{case}");
         }
     }
@@ -202,6 +204,7 @@ fn invalid_unary_operand_type() {
 
 #[test]
 fn name_error() {
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
     let cases: [(&str, &str, Error); 2] = [
         ("UNDEFINED",r#"print name"#, Error::NameError { name: String::from("name") }),
         ("UNDEFINED YET",r#"
@@ -211,7 +214,7 @@ fn name_error() {
     ];
 
     for (case, src, expected) in cases {
-        if let Err(e) = eval_all(src,&API){
+        if let Err(e) = eval_all(src,Arc::clone(&api)){
             assert_eq!(e, expected, "{case}");
         }
     }
@@ -219,6 +222,7 @@ fn name_error() {
 
 #[test]
 fn zero_division_error() {
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
     let cases: [(&str, &str, Error); 2] = [
         ("<Number> / 0",r#"print 10/0"#, Error::ZeroDivisionError),
         ("<Number> / <Var(0)>",r#"
@@ -228,7 +232,7 @@ fn zero_division_error() {
     ];
 
     for (case, src, expected) in cases {
-        if let Err(e) = eval_all(src,&API){
+        if let Err(e) = eval_all(src,Arc::clone(&api)){
             assert_eq!(e, expected, "{case}");
         }
     }
@@ -236,6 +240,7 @@ fn zero_division_error() {
 
 #[test]
 fn too_large_number() {
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
     let cases: [(&str, &str, Error); 1] = [
         ("GENERATED TOO LARGE",r#"
             n = 2
@@ -247,7 +252,7 @@ fn too_large_number() {
     ];
 
     for (case, src, expected) in cases {
-        if let Err(e) = eval_all(src,&API){
+        if let Err(e) = eval_all(src,Arc::clone(&api)){
             assert_eq!(e, expected, "{case}");
         }
     }
@@ -255,6 +260,7 @@ fn too_large_number() {
 
 #[test]
 fn reserved_words() {
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
     let cases: [(&str, &str, Error); 21] = [
         ("print = <Expr>",r#"print = "print""#, Error::SyntaxError { messages: vec![String::from("reserved word 'print' cannot be used as a variable.")] }),
         ("move = <Expr>",r#"move = "move""#, Error::SyntaxError { messages: vec![String::from("reserved word 'move' cannot be used as a variable.")] }),
@@ -280,7 +286,7 @@ fn reserved_words() {
     ];
 
     for (case, src, expected) in cases {
-        if let Err(e) = eval_all(src,&API){
+        if let Err(e) = eval_all(src,Arc::clone(&api)){
             assert_eq!(e, expected, "{case}");
         }
     }
@@ -298,7 +304,7 @@ fn arg_error() {
             true
         }
     }
-    let api:TestApi = TestApi;
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(TestApi);
 
     let cases: [(&str, &str, Error); 6] = [
         ("is_touched(<Expr>)",r#"print is_touched(true)"#, Error::ArgError { called: String::from("is_touched()"), expected: 0, got: 1 }),
@@ -310,7 +316,7 @@ fn arg_error() {
     ];
 
     for (case, src, expected) in cases {
-        if let Err(e) = eval_all(src,&api){
+        if let Err(e) = eval_all(src,Arc::clone(&api)){
             assert_eq!(e, expected, "{case}");
         }
     }

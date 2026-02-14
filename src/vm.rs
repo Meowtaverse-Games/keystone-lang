@@ -14,7 +14,7 @@ pub enum Event{
     Let
 }
 
-fn expr<'a>(input: Expr, ctx:&mut RuntimeContext, api: &'a dyn ExternalApi) -> Result<Expr,Error>{
+fn expr(input: Expr, ctx:&mut RuntimeContext, api:Arc<dyn ExternalApi + Send + Sync>) -> Result<Expr,Error>{
     match input{
         Expr::String(s) => Ok(Expr::String(String::from(s))),
         Expr::Uint(u) => Ok(Expr::Uint(u)),
@@ -40,8 +40,8 @@ fn expr<'a>(input: Expr, ctx:&mut RuntimeContext, api: &'a dyn ExternalApi) -> R
             }
         },
         Expr::Binary { op:o, lhs:l, rhs:r } => {
-            let l = expr(*l, ctx, api)?;
-            let r = expr(*r, ctx, api)?;
+            let l = expr(*l, ctx, Arc::clone(&api))?;
+            let r = expr(*r, ctx, Arc::clone(&api))?;
             match (l,r){
                 (Expr::Uint(x),Expr::Uint(y)) => {
                     match o{
@@ -146,10 +146,10 @@ fn stringize(input: &Expr) -> String{
 }
 
 #[derive(Clone)]
-pub struct EventIterator<'a> {
+pub struct EventIterator {
     stack: Vec<ExecutionFrame>,
     ctx: RuntimeContext,
-    api: &'a dyn ExternalApi
+    api: Arc<dyn ExternalApi + Send + Sync>
 }
 
 #[derive(Clone)]
@@ -169,8 +169,8 @@ enum ExecutionFrame {
     },
 }
 
-impl<'a> EventIterator<'a> {
-    pub fn new(statements: Vec<Statement>, ctx: RuntimeContext, api: &'a dyn ExternalApi) -> Self {
+impl EventIterator {
+    pub fn new(statements: Vec<Statement>, ctx: RuntimeContext, api: Arc<dyn ExternalApi + Send + Sync>) -> Self {
         EventIterator {
             stack: vec![ExecutionFrame::Statement {
                 statements: Arc::new(statements),
@@ -184,11 +184,11 @@ impl<'a> EventIterator<'a> {
     fn process_statement(&mut self, stmt: Statement) -> Result<Option<Event>, Error> {
         match stmt {
             Statement::Print(x) => {
-                let v = expr(x, &mut self.ctx, self.api)?;
+                let v = expr(x, &mut self.ctx, Arc::clone(&self.api))?;
                 Ok(Some(Event::Print(stringize(&v))))
             },
             Statement::Move(x) => {
-                let d = match expr(x, &mut self.ctx, self.api)? {
+                let d = match expr(x, &mut self.ctx, Arc::clone(&self.api))? {
                     Expr::Direction(d) => d,
                     _ => unreachable!()
                 };
@@ -203,21 +203,21 @@ impl<'a> EventIterator<'a> {
                 Ok(Some(Event::Turn(side)))
             },
             Statement::Dig(x) => {
-                let d = match expr(x, &mut self.ctx, self.api)? {
+                let d = match expr(x, &mut self.ctx, Arc::clone(&self.api))? {
                     Expr::Direction(d) => d,
                     _ => unreachable!()
                 };
                 Ok(Some(Event::Dig(d)))
             },
             Statement::Sleep(x) => {
-                let f = match expr(x, &mut self.ctx, self.api)? {
+                let f = match expr(x, &mut self.ctx, Arc::clone(&self.api))? {
                     Expr::Float(f) => f,
                     _ => unreachable!()
                 };
                 Ok(Some(Event::Sleep(f)))
             },
             Statement::Loop(x, body) => {
-                let count = match expr(x, &mut self.ctx, self.api)? {
+                let count = match expr(x, &mut self.ctx, Arc::clone(&self.api))? {
                     Expr::Uint(n) => n,
                     _ => unreachable!()
                 };
@@ -238,7 +238,7 @@ impl<'a> EventIterator<'a> {
                 Ok(None)
             },
             Statement::If(x, body) => {
-                let condition = match expr(x, &mut self.ctx, self.api)? {
+                let condition = match expr(x, &mut self.ctx, Arc::clone(&self.api))? {
                     Expr::Boolean(b) => b,
                     _ => unreachable!()
                 };
@@ -251,7 +251,7 @@ impl<'a> EventIterator<'a> {
                 Ok(None)
             },
             Statement::Let(s, x) => {
-                let rx = expr(x, &mut self.ctx, self.api)?;
+                let rx = expr(x, &mut self.ctx, Arc::clone(&self.api))?;
                 self.ctx.set(&s, rx);
                 Ok(Some(Event::Let))
             }
@@ -259,7 +259,7 @@ impl<'a> EventIterator<'a> {
     }
 }
 
-impl<'a> Iterator for EventIterator<'a> {
+impl Iterator for EventIterator {
     type Item = Result<Event, Error>;
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -304,7 +304,7 @@ impl<'a> Iterator for EventIterator<'a> {
                 },
                 ExecutionFrame::While { condition, body } => {
                     let body_clone = Arc::clone(&body);
-                    match expr(condition.clone(), &mut self.ctx, self.api) {
+                    match expr(condition.clone(), &mut self.ctx, Arc::clone(&self.api)) {
                         Ok(Expr::Boolean(true)) => {
                             self.stack.push(ExecutionFrame::Statement {
                                 statements: body_clone,
@@ -324,6 +324,6 @@ impl<'a> Iterator for EventIterator<'a> {
     }
 }
 
-pub fn run(input: Vec<Statement>, ctx: RuntimeContext, api:&dyn ExternalApi) -> EventIterator {
+pub fn run(input: Vec<Statement>, ctx: RuntimeContext, api:Arc<dyn ExternalApi + Send + Sync>) -> EventIterator {
     EventIterator::new(input, ctx, api)
 }

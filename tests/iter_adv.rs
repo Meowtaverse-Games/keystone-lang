@@ -1,17 +1,12 @@
-use std::cell::RefCell;
+use std::sync::{Arc, Mutex};
 
 use keystone_lang::{eval,Event,EventIterator,ExternalApi,Direction};
 
 struct MyApi;
 impl ExternalApi for MyApi {
-    fn is_touched(&self) -> bool {
-        true
-    }
-    fn is_empty(&self) -> bool {
-        true
-    }
+    fn is_touched(&self) -> bool { true }
+    fn is_empty(&self) -> bool { true }
 }
-const API:MyApi = MyApi;
 
 //helper
 fn next(iter: &mut EventIterator) -> Event {
@@ -20,10 +15,11 @@ fn next(iter: &mut EventIterator) -> Event {
 
 #[test]
 fn var_use(){
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
     let mut iter = eval(r#"
         msg = "Succeed!"
         print msg
-    "#,&API).expect("eval failed");
+    "#,Arc::clone(&api)).expect("eval failed");
     assert_eq!(next(&mut iter), Event::Let);
     assert_eq!(next(&mut iter), Event::Print("Succeed!".into()));
     assert!(iter.next().is_none());
@@ -31,12 +27,13 @@ fn var_use(){
 
 #[test]
 fn var_override(){
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
     let mut iter = eval(r#"
         msg = "Yes"
         print msg
         msg = "Yas"
         print msg
-    "#,&API).expect("eval failed");
+    "#,Arc::clone(&api)).expect("eval failed");
     assert_eq!(next(&mut iter), Event::Let);
     assert_eq!(next(&mut iter), Event::Print("Yes".into()));
     assert_eq!(next(&mut iter), Event::Let);
@@ -46,13 +43,14 @@ fn var_override(){
 
 #[test]
 fn var_combination(){
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
     let mut iter = eval(r#"
         dad = "Father"
         print dad
         mom = "Mother"
         print mom
         print dad
-    "#,&API).expect("eval failed");
+    "#,Arc::clone(&api)).expect("eval failed");
     assert_eq!(next(&mut iter), Event::Let);
     assert_eq!(next(&mut iter), Event::Print("Father".into()));
     assert_eq!(next(&mut iter), Event::Let);
@@ -63,6 +61,7 @@ fn var_combination(){
 
 #[test]
 fn loop_loop(){
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
     let mut iter = eval(r#"
         loop 3
             loop 2
@@ -70,7 +69,7 @@ fn loop_loop(){
             end
             print "after tomorrow"
         end
-    "#,&API).expect("eval failed");
+    "#,Arc::clone(&api)).expect("eval failed");
     assert_eq!(next(&mut iter), Event::Print("The day ".into()));
     assert_eq!(next(&mut iter), Event::Print("The day ".into()));
     assert_eq!(next(&mut iter), Event::Print("after tomorrow".into()));
@@ -85,6 +84,7 @@ fn loop_loop(){
 
 #[test]
 fn if_if(){
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
     let mut iter = eval(r#"
         n = 4
         if 3 < n
@@ -106,7 +106,7 @@ fn if_if(){
         if n == 3
             print "n is 3"
         end
-    "#,&API).expect("eval failed");
+    "#,Arc::clone(&api)).expect("eval failed");
     assert_eq!(next(&mut iter), Event::Let);
     assert_eq!(next(&mut iter), Event::Print("n is 4".into()));
     assert!(iter.next().is_none());
@@ -114,6 +114,7 @@ fn if_if(){
 
 #[test]
 fn loop_if(){
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
     let mut iter = eval(r#"
         i = 2
         loop 5
@@ -127,7 +128,7 @@ fn loop_if(){
             end
             i = i*2
         end
-    "#,&API).expect("eval failed");
+    "#,Arc::clone(&api)).expect("eval failed");
     assert_eq!(next(&mut iter), Event::Let);
     assert_eq!(next(&mut iter), Event::Print("2".into()));
     assert_eq!(next(&mut iter), Event::Print("is less than 10".into()));
@@ -149,13 +150,14 @@ fn loop_if(){
 
 #[test]
 fn different_scope(){
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
     let mut iter = eval(r#"
         x = 0
         loop 5
             x = x+1
         end
         print x
-    "#,&API).expect("eval failed");
+    "#,Arc::clone(&api)).expect("eval failed");
     assert_eq!(next(&mut iter), Event::Let);
     assert_eq!(next(&mut iter), Event::Let);
     assert_eq!(next(&mut iter), Event::Let);
@@ -168,13 +170,14 @@ fn different_scope(){
 
 #[test]
 fn too_many_loop(){
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
     let mut iter = eval(r#"
         i = 0
         loop 10000
             i = i+1
             print i
         end
-    "#,&API).expect("eval failed");
+    "#,Arc::clone(&api)).expect("eval failed");
     assert_eq!(next(&mut iter), Event::Let);
     for i in 1..=10000 {
         assert_eq!(next(&mut iter), Event::Let);
@@ -187,23 +190,25 @@ fn too_many_loop(){
 #[test]
 fn touch_ground(){
     struct TestApi {
-        touched: RefCell<bool>,
-        empty: RefCell<bool>,
+        touched: Mutex<bool>,
+        empty: Mutex<bool>,
     }
-
+    
     impl ExternalApi for TestApi {
         fn is_touched(&self) -> bool {
-            *self.touched.borrow()
+            *self.touched.lock().unwrap()
         }
         fn is_empty(&self) -> bool {
-            *self.empty.borrow()
+            *self.empty.lock().unwrap()
         }
     }
 
-    let api = TestApi {
-        touched: RefCell::new(false),
-        empty: RefCell::new(true),
-    };
+    let test_api = Arc::new(TestApi {
+        touched: Mutex::new(false),
+        empty: Mutex::new(true),
+    });
+
+    let api_for_eval: Arc<dyn ExternalApi + Send + Sync> = test_api.clone();
 
     let mut iter = eval(r#"
         y = 0
@@ -212,7 +217,7 @@ fn touch_ground(){
             y = y+1
         end
         print y
-    "#,&api).expect("eval failed");
+    "#,api_for_eval).expect("eval failed");
     assert_eq!(next(&mut iter), Event::Let);
     assert_eq!(next(&mut iter), Event::Move(Direction::Down));
     assert_eq!(next(&mut iter), Event::Let);
@@ -220,7 +225,7 @@ fn touch_ground(){
     assert_eq!(next(&mut iter), Event::Let);
     assert_eq!(next(&mut iter), Event::Move(Direction::Down));
     assert_eq!(next(&mut iter), Event::Let);
-    *api.touched.borrow_mut() = true;
+    *test_api.touched.lock().unwrap() = true;
     assert_eq!(next(&mut iter), Event::Print("3".into()));
     assert!(iter.next().is_none());
 }

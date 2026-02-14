@@ -6,6 +6,8 @@ mod vm;
 mod context;
 mod api;
 
+use std::sync::Arc;
+
 use chumsky::prelude::*;
 use parser::program_parser as parser;
 use typecheck::check;
@@ -14,7 +16,7 @@ use context::{TypeContext,RuntimeContext};
 
 pub use {error::Error, vm::{Event,EventIterator}, ast::{Direction,Side,Type,Op,UnaryOp}, api::ExternalApi};
 
-pub fn eval<'s,'a>(input: &'s str,api: &'a dyn ExternalApi,) -> Result<EventIterator<'a>, Error>{
+pub fn eval(input: &str, api: Arc<dyn ExternalApi + Send + Sync>) -> Result<EventIterator, Error>{
     let parsed = parser().parse(input.trim());
     let Some(parsed) = parsed.output() else {
         let mut msg:Vec<String> = Vec::new();
@@ -29,7 +31,7 @@ pub fn eval<'s,'a>(input: &'s str,api: &'a dyn ExternalApi,) -> Result<EventIter
     Ok(run(parsed.to_owned(), runtime_ctx,api))
 }
 
-pub fn eval_all<'a>(input: &'a str, api:&'a dyn ExternalApi) -> Result<Vec<Event>,Error> {
+pub fn eval_all(input:&str, api:Arc<dyn ExternalApi + Send + Sync>) -> Result<Vec<Event>,Error> {
     let events: Result<Vec<Event>, Error> = eval(input,api)?.collect();
     events
 }
