@@ -195,12 +195,12 @@ fn stateful_api(){
             end
         end
     "#,&api).expect("eval failed");
-    assert_eq!(next(&mut iter), Event::Move(Direction::Right));
-    assert_eq!(next(&mut iter), Event::Move(Direction::Right));
+    assert_eq!(next(&mut iter), Event::Move(Direction::Right)); //frame 1 : not is_touched()
+    assert_eq!(next(&mut iter), Event::Move(Direction::Right)); //frame 2 : not is_touched()
     *api.touched.borrow_mut() = true;
-    assert_eq!(next(&mut iter), Event::Move(Direction::Up));
-    assert_eq!(next(&mut iter), Event::Move(Direction::Up));
-    assert_eq!(next(&mut iter), Event::Move(Direction::Up));
-    assert_eq!(next(&mut iter), Event::Move(Direction::Up)); //?
+    assert_eq!(next(&mut iter), Event::Move(Direction::Up)); //*frame 2 : is_touched()
+    assert_eq!(next(&mut iter), Event::Move(Direction::Up)); //frame 3 : is_touched()
+    assert_eq!(next(&mut iter), Event::Move(Direction::Up)); //frame 4 : is_touched()
+    assert_eq!(next(&mut iter), Event::Move(Direction::Up)); //frame 5 : is_touched()
     assert!(iter.next().is_none());
 }

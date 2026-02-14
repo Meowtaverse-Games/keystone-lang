@@ -1,4 +1,6 @@
-use keystone_lang::{eval,Event,EventIterator,ExternalApi};
+use std::cell::RefCell;
+
+use keystone_lang::{eval,Event,EventIterator,ExternalApi,Direction};
 
 struct MyApi;
 impl ExternalApi for MyApi {
@@ -178,5 +180,47 @@ fn too_many_loop(){
         assert_eq!(next(&mut iter), Event::Let);
         assert_eq!(next(&mut iter), Event::Print(i.to_string()));
     }
+    assert!(iter.next().is_none());
+}
+
+
+#[test]
+fn touch_ground(){
+    struct TestApi {
+        touched: RefCell<bool>,
+        empty: RefCell<bool>,
+    }
+
+    impl ExternalApi for TestApi {
+        fn is_touched(&self) -> bool {
+            *self.touched.borrow()
+        }
+        fn is_empty(&self) -> bool {
+            *self.empty.borrow()
+        }
+    }
+
+    let api = TestApi {
+        touched: RefCell::new(false),
+        empty: RefCell::new(true),
+    };
+
+    let mut iter = eval(r#"
+        y = 0
+        while not is_touched()
+            move down
+            y = y+1
+        end
+        print y
+    "#,&api).expect("eval failed");
+    assert_eq!(next(&mut iter), Event::Let);
+    assert_eq!(next(&mut iter), Event::Move(Direction::Down));
+    assert_eq!(next(&mut iter), Event::Let);
+    assert_eq!(next(&mut iter), Event::Move(Direction::Down));
+    assert_eq!(next(&mut iter), Event::Let);
+    assert_eq!(next(&mut iter), Event::Move(Direction::Down));
+    assert_eq!(next(&mut iter), Event::Let);
+    *api.touched.borrow_mut() = true;
+    assert_eq!(next(&mut iter), Event::Print("3".into()));
     assert!(iter.next().is_none());
 }
