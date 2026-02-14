@@ -14,7 +14,7 @@ use context::{TypeContext,RuntimeContext};
 
 pub use {error::Error, vm::{Event,EventIterator}, ast::{Direction,Side,Type,Op,UnaryOp}, api::ExternalApi};
 
-pub fn eval<'a>(input: &'a str, api:&'a dyn ExternalApi) -> Result<EventIterator<'a>, Error> {
+pub fn eval<'s,'a>(input: &'s str,api: &'a dyn ExternalApi,) -> Result<EventIterator<'a>, Error>{
     let parsed = parser().parse(input.trim());
     let Some(parsed) = parsed.output() else {
         let mut msg:Vec<String> = Vec::new();
