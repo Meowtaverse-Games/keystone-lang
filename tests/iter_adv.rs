@@ -70,12 +70,16 @@ fn loop_loop(){
             print "after tomorrow"
         end
     "#,Arc::clone(&api)).expect("eval failed");
+    assert_eq!(next(&mut iter), Event::Tick);
+    assert_eq!(next(&mut iter), Event::Tick);
     assert_eq!(next(&mut iter), Event::Print("The day ".into()));
     assert_eq!(next(&mut iter), Event::Print("The day ".into()));
     assert_eq!(next(&mut iter), Event::Print("after tomorrow".into()));
+    assert_eq!(next(&mut iter), Event::Tick);
     assert_eq!(next(&mut iter), Event::Print("The day ".into()));
     assert_eq!(next(&mut iter), Event::Print("The day ".into()));
     assert_eq!(next(&mut iter), Event::Print("after tomorrow".into()));
+    assert_eq!(next(&mut iter), Event::Tick);
     assert_eq!(next(&mut iter), Event::Print("The day ".into()));
     assert_eq!(next(&mut iter), Event::Print("The day ".into()));
     assert_eq!(next(&mut iter), Event::Print("after tomorrow".into()));
@@ -108,7 +112,12 @@ fn if_if(){
         end
     "#,Arc::clone(&api)).expect("eval failed");
     assert_eq!(next(&mut iter), Event::Let);
+    assert_eq!(next(&mut iter), Event::Tick);
+    assert_eq!(next(&mut iter), Event::Tick);
     assert_eq!(next(&mut iter), Event::Print("n is 4".into()));
+    assert_eq!(next(&mut iter), Event::Tick);
+    assert_eq!(next(&mut iter), Event::Tick);
+    assert_eq!(next(&mut iter), Event::Tick);
     assert!(iter.next().is_none());
 }
 
@@ -130,18 +139,29 @@ fn loop_if(){
         end
     "#,Arc::clone(&api)).expect("eval failed");
     assert_eq!(next(&mut iter), Event::Let);
+    assert_eq!(next(&mut iter), Event::Tick);
+    assert_eq!(next(&mut iter), Event::Tick);
     assert_eq!(next(&mut iter), Event::Print("2".into()));
     assert_eq!(next(&mut iter), Event::Print("is less than 10".into()));
+    assert_eq!(next(&mut iter), Event::Tick);
     assert_eq!(next(&mut iter), Event::Let);
+    assert_eq!(next(&mut iter), Event::Tick);
     assert_eq!(next(&mut iter), Event::Print("4".into()));
     assert_eq!(next(&mut iter), Event::Print("is less than 10".into()));
+    assert_eq!(next(&mut iter), Event::Tick);
     assert_eq!(next(&mut iter), Event::Let);
+    assert_eq!(next(&mut iter), Event::Tick);
     assert_eq!(next(&mut iter), Event::Print("8".into()));
     assert_eq!(next(&mut iter), Event::Print("is less than 10".into()));
+    assert_eq!(next(&mut iter), Event::Tick);
     assert_eq!(next(&mut iter), Event::Let);
+    assert_eq!(next(&mut iter), Event::Tick);
+    assert_eq!(next(&mut iter), Event::Tick);
     assert_eq!(next(&mut iter), Event::Print("16".into()));
     assert_eq!(next(&mut iter), Event::Print("is greater than 10".into()));
     assert_eq!(next(&mut iter), Event::Let);
+    assert_eq!(next(&mut iter), Event::Tick);
+    assert_eq!(next(&mut iter), Event::Tick);
     assert_eq!(next(&mut iter), Event::Print("32".into()));
     assert_eq!(next(&mut iter), Event::Print("is greater than 10".into()));
     assert_eq!(next(&mut iter), Event::Let);
@@ -159,6 +179,7 @@ fn different_scope(){
         print x
     "#,Arc::clone(&api)).expect("eval failed");
     assert_eq!(next(&mut iter), Event::Let);
+    assert_eq!(next(&mut iter), Event::Tick);
     assert_eq!(next(&mut iter), Event::Let);
     assert_eq!(next(&mut iter), Event::Let);
     assert_eq!(next(&mut iter), Event::Let);
@@ -179,6 +200,7 @@ fn too_many_loop(){
         end
     "#,Arc::clone(&api)).expect("eval failed");
     assert_eq!(next(&mut iter), Event::Let);
+    assert_eq!(next(&mut iter), Event::Tick);
     for i in 1..=10000 {
         assert_eq!(next(&mut iter), Event::Let);
         assert_eq!(next(&mut iter), Event::Print(i.to_string()));
@@ -219,6 +241,7 @@ fn touch_ground(){
         print y
     "#,api_for_eval).expect("eval failed");
     assert_eq!(next(&mut iter), Event::Let);
+    assert_eq!(next(&mut iter), Event::Tick);
     assert_eq!(next(&mut iter), Event::Move(Direction::Down));
     assert_eq!(next(&mut iter), Event::Let);
     assert_eq!(next(&mut iter), Event::Move(Direction::Down));
@@ -228,4 +251,29 @@ fn touch_ground(){
     *test_api.touched.lock().unwrap() = true;
     assert_eq!(next(&mut iter), Event::Print("3".into()));
     assert!(iter.next().is_none());
+}
+
+
+#[test]
+fn complex_frame(){
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
+    let mut iter = eval(r#"
+        x = 0
+        while true
+            if x < 1000
+                print "hey"
+                x = x + 1
+            end
+        end
+    "#,Arc::clone(&api)).expect("eval failed");
+    assert_eq!(next(&mut iter), Event::Let);
+    assert_eq!(next(&mut iter), Event::Tick);
+    for _ in 0..1000{
+        assert_eq!(next(&mut iter), Event::Tick);
+        assert_eq!(next(&mut iter), Event::Print("hey".into()));
+        assert_eq!(next(&mut iter), Event::Let);
+    }
+    for _ in 0..1000{
+        assert_eq!(next(&mut iter), Event::Tick);
+    }
 }

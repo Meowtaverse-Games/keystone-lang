@@ -43,7 +43,7 @@ fn super_statement() {
             if true
                 print "Ok"
             end
-        "#, vec![Event::Print("Ok".to_owned())]),
+        "#, vec![Event::Tick,Event::Print("Ok".to_owned())]),
         (r#"
             if false
                 [STATEMENT]
@@ -52,7 +52,7 @@ fn super_statement() {
             if false
                 print "NG"
             end
-        "#,Vec::<Event>::new()),
+        "#,vec![Event::Tick]),
         (r#"
             loop <Number>
                 [STATEMENT]
@@ -61,7 +61,7 @@ fn super_statement() {
             loop 3
                 print "Ok"
             end
-        "#, vec![Event::Print("Ok".to_owned());3]),
+        "#, vec![Event::Tick,Event::Print("Ok".to_owned()),Event::Print("Ok".to_owned()),Event::Print("Ok".to_owned())]),
         (r#"
             while <Boolean>
                 [STATEMENT]
@@ -74,6 +74,7 @@ fn super_statement() {
             end
         "#, vec![
             Event::Let,
+            Event::Tick,
             Event::Print("White".to_owned()),
             Event::Let,
             Event::Print("White".to_owned()),

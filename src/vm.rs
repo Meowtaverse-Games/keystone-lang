@@ -11,7 +11,8 @@ pub enum Event{
     Turn(Side),
     Dig(Direction),
     Sleep(f32),
-    Let
+    Let,
+    Tick
 }
 
 fn expr(input: Expr, ctx:&mut RuntimeContext, api:Arc<dyn ExternalApi + Send + Sync>) -> Result<Expr,Error>{
@@ -281,7 +282,7 @@ impl Iterator for EventIterator {
                     }
                     match self.process_statement(stmt) {
                         Ok(Some(event)) => return Some(Ok(event)),
-                        Ok(None) => continue,
+                        Ok(None) => return Some(Ok(Event::Tick)),
                         Err(e) => return Some(Err(e)),
                     }
                 },

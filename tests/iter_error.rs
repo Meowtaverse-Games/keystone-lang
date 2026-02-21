@@ -56,6 +56,7 @@ fn later_loop(){
         end
     "#,Arc::clone(&api)).expect("eval failed");
     assert_eq!(next(&mut iter), Ok(Event::Let));
+    assert_eq!(next(&mut iter), Ok(Event::Tick));
     assert_eq!(next(&mut iter), Ok(Event::Let));
     assert_eq!(next(&mut iter), Ok(Event::Print("5".into())));
     assert_eq!(next(&mut iter), Ok(Event::Let));

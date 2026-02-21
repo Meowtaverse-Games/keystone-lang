@@ -61,6 +61,7 @@ fn loop_statements(){
             print 5*2
         end
     "#,api).expect("eval failed"),vec![
+        Event::Tick,
         Event::Print("Hello".to_owned()),
         Event::Print("10".to_owned()),
         Event::Print("Hello".to_owned()),
@@ -87,7 +88,9 @@ fn if_var_combination(){
         end
     "#,api).expect("eval failed"),vec![
         Event::Let,
-        Event::Print("Yes".to_owned())
+        Event::Tick,
+        Event::Print("Yes".to_owned()),
+        Event::Tick
     ]);
 }
 
@@ -101,9 +104,12 @@ fn loop_loop(){
             end
         end
     "#,api).expect("eval failed"),vec![
+        Event::Tick,
+        Event::Tick,
         Event::Print("Hello".to_owned()),
         Event::Print("Hello".to_owned()),
         Event::Print("Hello".to_owned()),
+        Event::Tick,
         Event::Print("Hello".to_owned()),
         Event::Print("Hello".to_owned()),
         Event::Print("Hello".to_owned()),
@@ -128,19 +134,23 @@ fn while_while(){
     "#,api).expect("eval failed"),vec![
         Event::Let,
         Event::Let,
+        Event::Tick,
         Event::Let,
+        Event::Tick,
         Event::Print("0".to_owned()),
         Event::Let,
         Event::Print("1".to_owned()),
         Event::Let,
         Event::Let,
         Event::Let,
+        Event::Tick,
         Event::Print("1".to_owned()),
         Event::Let,
         Event::Print("2".to_owned()),
         Event::Let,
         Event::Let,
         Event::Let,
+        Event::Tick,
         Event::Print("2".to_owned()),
         Event::Let,
         Event::Print("3".to_owned()),
@@ -169,7 +179,11 @@ fn if_if(){
         end
     "#,api).expect("eval failed"),vec![
         Event::Let,
-        Event::Print("Medium".to_owned())
+        Event::Tick,
+        Event::Tick,
+        Event::Print("Medium".to_owned()),
+        Event::Tick,
+        Event::Tick
     ]);
 }
 
@@ -184,6 +198,7 @@ fn not_not(){
         end
     "#,api).expect("eval failed"),vec![
         Event::Let,
+        Event::Tick,
         Event::Print("na na...".to_owned())
     ]);
 }
@@ -202,10 +217,14 @@ fn not_toggle(){
         end
     "#,api).expect("eval failed"),vec![
         Event::Let,
+        Event::Tick,
         Event::Let,
+        Event::Tick,
         Event::Print("Switching...".to_owned()),
         Event::Let,
+        Event::Tick,
         Event::Let,
+        Event::Tick,
         Event::Print("Switching...".to_owned())
     ]);
 }
@@ -219,6 +238,7 @@ fn not_bin(){
             print "3 is not greater than 5."
         end
     "#,api).expect("eval failed"),vec![
+        Event::Tick,
         Event::Print("3 is not greater than 5.".to_owned())
     ]);
 }
@@ -237,10 +257,15 @@ fn loop_if(){
         end
     "#,api).expect("eval failed"),vec![
         Event::Let,
+        Event::Tick,
         Event::Let,
+        Event::Tick,
         Event::Let,
+        Event::Tick,
         Event::Let,
+        Event::Tick,
         Event::Let,
+        Event::Tick,
         Event::Print("65536".to_owned())
     ]);
 }
@@ -258,6 +283,7 @@ fn complex_binary(){
     "#,api).expect("eval failed"),vec![
         Event::Let,
         Event::Let,
+        Event::Tick,
         Event::Print("2".to_owned())
     ]);
 }
@@ -274,6 +300,7 @@ fn released_scope(){
         print x
     "#,api).expect("eval failed"),vec![
         Event::Let,
+        Event::Tick,
         Event::Let,
         Event::Let,
         Event::Let,
@@ -311,18 +338,35 @@ fn switch_direction(){
     "#,api).expect("eval failed"),vec![
         Event::Let,
         Event::Let,
+        Event::Tick,
+        Event::Tick,
         Event::Let,
         Event::Let,
+        Event::Tick,
+        Event::Tick,
+        Event::Tick,
         Event::Let,
         Event::Move(Direction::Right),
+        Event::Tick,
+        Event::Tick,
         Event::Let,
         Event::Let,
+        Event::Tick,
+        Event::Tick,
         Event::Let,
         Event::Move(Direction::Back),
+        Event::Tick,
+        Event::Tick,
+        Event::Tick,
         Event::Let,
         Event::Let,
+        Event::Tick,
         Event::Let,
         Event::Move(Direction::Left),
+        Event::Tick,
+        Event::Tick,
+        Event::Tick,
+        Event::Tick,
         Event::Let,
         Event::Let,
         Event::Let,
@@ -344,6 +388,7 @@ fn sleep_timer_step(){
         end
     "#,api).expect("eval failed"),vec![
         Event::Let,
+        Event::Tick,
         Event::Let,Event::Sleep(0.5),
         Event::Let,Event::Sleep(1.0),
         Event::Let,Event::Sleep(1.5),
@@ -369,11 +414,13 @@ fn complex_while(){
     "#,api).expect("eval failed"),vec![
         Event::Let,
         Event::Let,
+        Event::Tick,
         Event::Let,
         Event::Let,
         Event::Let,
         Event::Let,
         Event::Let,
+        Event::Tick,
         Event::Let,
         Event::Let,
         Event::Let,
@@ -407,6 +454,8 @@ fn complex_api(){
     "#,api).expect("eval failed"),vec![
         Event::Let,
         Event::Let,
+        Event::Tick,
+        Event::Tick,
         Event::Print("x != y".to_owned())
     ]);
 }
@@ -429,6 +478,7 @@ fn dynamic_api(){
             print "false"
         end
     "#,api).expect("eval failed"),vec![
+        Event::Tick,
         Event::Print("false".to_owned())
     ]);
 }

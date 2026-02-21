@@ -42,6 +42,7 @@ fn if_single(){
             print "100 < 1000 is true"
         end
     "#,Arc::clone(&api)).expect("eval failed");
+    assert_eq!(next(&mut iter), Event::Tick);
     assert_eq!(next(&mut iter), Event::Print("100 < 1000 is true".into()));
     assert!(iter.next().is_none());
 }
@@ -60,7 +61,10 @@ fn if_multiple(){
             print "but Hoge is Hoge"
         end
     "#,Arc::clone(&api)).expect("eval failed");
+    assert_eq!(next(&mut iter), Event::Tick);
     assert_eq!(next(&mut iter), Event::Print("Hello isn't Happy".into()));
+    assert_eq!(next(&mut iter), Event::Tick);
+    assert_eq!(next(&mut iter), Event::Tick);
     assert_eq!(next(&mut iter), Event::Print("but Hoge is Hoge".into()));
     assert!(iter.next().is_none());
 }
@@ -78,8 +82,10 @@ fn if_multiple_multiple(){
             print "so there's no meaning"
         end
     "#,Arc::clone(&api)).expect("eval failed");
+    assert_eq!(next(&mut iter), Event::Tick);
     assert_eq!(next(&mut iter), Event::Print("definitely works...".into()));
     assert_eq!(next(&mut iter), Event::Print("so there's no meaning".into()));
+    assert_eq!(next(&mut iter), Event::Tick);
     assert!(iter.next().is_none());
 }
 
@@ -91,6 +97,7 @@ fn loop_single(){
             print "Woah"
         end
     "#,Arc::clone(&api)).expect("eval failed");
+    assert_eq!(next(&mut iter), Event::Tick);
     assert_eq!(next(&mut iter), Event::Print("Woah".into()));
     assert_eq!(next(&mut iter), Event::Print("Woah".into()));
     assert_eq!(next(&mut iter), Event::Print("Woah".into()));
@@ -108,9 +115,11 @@ fn loop_multiple(){
             print "Delicious"
         end
     "#,Arc::clone(&api)).expect("eval failed");
+    assert_eq!(next(&mut iter), Event::Tick);
     assert_eq!(next(&mut iter), Event::Print("Yummy".into()));
     assert_eq!(next(&mut iter), Event::Print("Yummy".into()));
     assert_eq!(next(&mut iter), Event::Print("Yummy".into()));
+    assert_eq!(next(&mut iter), Event::Tick);
     assert_eq!(next(&mut iter), Event::Print("Delicious".into()));
     assert_eq!(next(&mut iter), Event::Print("Delicious".into()));
     assert!(iter.next().is_none());
@@ -131,12 +140,14 @@ fn loop_multiple_multiple(){
             print "Hi"
         end
     "#,Arc::clone(&api)).expect("eval failed");
+    assert_eq!(next(&mut iter), Event::Tick);
     assert_eq!(next(&mut iter), Event::Print("Good morning".into()));
     assert_eq!(next(&mut iter), Event::Print("Hello".into()));
     assert_eq!(next(&mut iter), Event::Print("Hi".into()));
     assert_eq!(next(&mut iter), Event::Print("Good morning".into()));
     assert_eq!(next(&mut iter), Event::Print("Hello".into()));
     assert_eq!(next(&mut iter), Event::Print("Hi".into()));
+    assert_eq!(next(&mut iter), Event::Tick);
     assert_eq!(next(&mut iter), Event::Print("Good evening".into()));
     assert_eq!(next(&mut iter), Event::Print("Hello".into()));
     assert_eq!(next(&mut iter), Event::Print("Hi".into()));
@@ -159,11 +170,13 @@ fn mix(){
         end
     "#,Arc::clone(&api)).expect("eval failed");
     assert_eq!(next(&mut iter), Event::Print("Hello".into()));
+    assert_eq!(next(&mut iter), Event::Tick);
     assert_eq!(next(&mut iter), Event::Print("World".into()));
     assert_eq!(next(&mut iter), Event::Print("World".into()));
     assert_eq!(next(&mut iter), Event::Print("World".into()));
     assert_eq!(next(&mut iter), Event::Print("World".into()));
     assert_eq!(next(&mut iter), Event::Print("World".into()));
+    assert_eq!(next(&mut iter), Event::Tick);
     assert_eq!(next(&mut iter), Event::Print("!".into()));
     assert!(iter.next().is_none());
 }
@@ -201,12 +214,23 @@ fn stateful_api(){
             end
         end
     "#,api_for_eval).expect("eval failed");
+    assert_eq!(next(&mut iter), Event::Tick);
+    assert_eq!(next(&mut iter), Event::Tick);
     assert_eq!(next(&mut iter), Event::Move(Direction::Right)); //frame 1 : not is_touched()
+    assert_eq!(next(&mut iter), Event::Tick);
+    assert_eq!(next(&mut iter), Event::Tick);
     assert_eq!(next(&mut iter), Event::Move(Direction::Right)); //frame 2 : not is_touched()
     *test_api.touched.lock().unwrap() = true;
+    assert_eq!(next(&mut iter), Event::Tick);
     assert_eq!(next(&mut iter), Event::Move(Direction::Up)); //*frame 2 : is_touched()
+    assert_eq!(next(&mut iter), Event::Tick);
+    assert_eq!(next(&mut iter), Event::Tick);
     assert_eq!(next(&mut iter), Event::Move(Direction::Up)); //frame 3 : is_touched()
+    assert_eq!(next(&mut iter), Event::Tick);
+    assert_eq!(next(&mut iter), Event::Tick);
     assert_eq!(next(&mut iter), Event::Move(Direction::Up)); //frame 4 : is_touched()
+    assert_eq!(next(&mut iter), Event::Tick);
+    assert_eq!(next(&mut iter), Event::Tick);
     assert_eq!(next(&mut iter), Event::Move(Direction::Up)); //frame 5 : is_touched()
     assert!(iter.next().is_none());
 }
