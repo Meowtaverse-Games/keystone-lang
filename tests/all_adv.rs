@@ -1,84 +1,115 @@
 use std::sync::Arc;
 
-use keystone_lang::{eval_all,Event,Direction,ExternalApi};
+use keystone_lang::{Direction, Event, ExternalApi, eval_all};
 
 struct MyApi;
 impl ExternalApi for MyApi {
-    fn is_touched(&self) -> bool { true }
-    fn is_empty(&self) -> bool { true }
+    fn is_touched(&self) -> bool {
+        true
+    }
+    fn is_empty(&self, _: Direction) -> bool {
+        true
+    }
 }
 
 #[test]
-fn var_use(){
+fn var_use() {
     let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
-    assert_eq!(eval_all(r#"
+    assert_eq!(
+        eval_all(
+            r#"
         n = 30
         print n
-    "#,api).expect("eval failed"),vec![
-        Event::Let,
-        Event::Print("30".to_owned())
-    ]);
+    "#,
+            api
+        )
+        .expect("eval failed"),
+        vec![Event::Let, Event::Print("30".to_owned())]
+    );
 }
 
 #[test]
-fn var_combination(){
+fn var_combination() {
     let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
-    assert_eq!(eval_all(r#"
+    assert_eq!(
+        eval_all(
+            r#"
         x = 3 + 5
         print x
         y = x * 2
         print y
-    "#,api).expect("eval failed"),vec![
-        Event::Let,
-        Event::Print("8".to_owned()),
-        Event::Let,
-        Event::Print("16".to_owned())
-    ]);
+    "#,
+            api
+        )
+        .expect("eval failed"),
+        vec![
+            Event::Let,
+            Event::Print("8".to_owned()),
+            Event::Let,
+            Event::Print("16".to_owned())
+        ]
+    );
 }
 
 #[test]
-fn float_var(){
+fn float_var() {
     let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
-    assert_eq!(eval_all(r#"
+    assert_eq!(
+        eval_all(
+            r#"
         x = 1.8
         print x
         y = x * 2.0
         print y
-    "#,api).expect("eval failed"),vec![
-        Event::Let,
-        Event::Print("1.8".to_owned()),
-        Event::Let,
-        Event::Print("3.6".to_owned())
-    ]);
+    "#,
+            api
+        )
+        .expect("eval failed"),
+        vec![
+            Event::Let,
+            Event::Print("1.8".to_owned()),
+            Event::Let,
+            Event::Print("3.6".to_owned())
+        ]
+    );
 }
 
 #[test]
-fn loop_statements(){
+fn loop_statements() {
     let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
-    assert_eq!(eval_all(r#"
+    assert_eq!(
+        eval_all(
+            r#"
         loop 5
             print "Hello"
             print 5*2
         end
-    "#,api).expect("eval failed"),vec![
-        Event::Tick,
-        Event::Print("Hello".to_owned()),
-        Event::Print("10".to_owned()),
-        Event::Print("Hello".to_owned()),
-        Event::Print("10".to_owned()),
-        Event::Print("Hello".to_owned()),
-        Event::Print("10".to_owned()),
-        Event::Print("Hello".to_owned()),
-        Event::Print("10".to_owned()),
-        Event::Print("Hello".to_owned()),
-        Event::Print("10".to_owned()),
-    ]);
+    "#,
+            api
+        )
+        .expect("eval failed"),
+        vec![
+            Event::Tick,
+            Event::Print("Hello".to_owned()),
+            Event::Print("10".to_owned()),
+            Event::Print("Hello".to_owned()),
+            Event::Print("10".to_owned()),
+            Event::Print("Hello".to_owned()),
+            Event::Print("10".to_owned()),
+            Event::Print("Hello".to_owned()),
+            Event::Print("10".to_owned()),
+            Event::Print("Hello".to_owned()),
+            Event::Print("10".to_owned()),
+        ]
+    );
 }
 
 #[test]
-fn if_var_combination(){
+fn if_var_combination() {
     let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
-    assert_eq!(eval_all(r#"
+    assert_eq!(
+        eval_all(
+            r#"
         x = 10
         if x > 5
             print "Yes"
@@ -86,41 +117,55 @@ fn if_var_combination(){
         if x <= 5
             print "No"
         end
-    "#,api).expect("eval failed"),vec![
-        Event::Let,
-        Event::Tick,
-        Event::Print("Yes".to_owned()),
-        Event::Tick
-    ]);
+    "#,
+            api
+        )
+        .expect("eval failed"),
+        vec![
+            Event::Let,
+            Event::Tick,
+            Event::Print("Yes".to_owned()),
+            Event::Tick
+        ]
+    );
 }
 
 #[test]
-fn loop_loop(){
+fn loop_loop() {
     let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
-    assert_eq!(eval_all(r#"
+    assert_eq!(
+        eval_all(
+            r#"
         loop 2
             loop 3
                 print "Hello"
             end
         end
-    "#,api).expect("eval failed"),vec![
-        Event::Tick,
-        Event::Tick,
-        Event::Print("Hello".to_owned()),
-        Event::Print("Hello".to_owned()),
-        Event::Print("Hello".to_owned()),
-        Event::Tick,
-        Event::Print("Hello".to_owned()),
-        Event::Print("Hello".to_owned()),
-        Event::Print("Hello".to_owned()),
-    ]);
+    "#,
+            api
+        )
+        .expect("eval failed"),
+        vec![
+            Event::Tick,
+            Event::Tick,
+            Event::Print("Hello".to_owned()),
+            Event::Print("Hello".to_owned()),
+            Event::Print("Hello".to_owned()),
+            Event::Tick,
+            Event::Print("Hello".to_owned()),
+            Event::Print("Hello".to_owned()),
+            Event::Print("Hello".to_owned()),
+        ]
+    );
 }
 
 #[test]
-fn while_while(){
+fn while_while() {
     let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
 
-    assert_eq!(eval_all(r#"
+    assert_eq!(
+        eval_all(
+            r#"
         p = 0
         q = 0
         while p < 3
@@ -131,40 +176,46 @@ fn while_while(){
             end
             p = p+1
         end
-    "#,api).expect("eval failed"),vec![
-        Event::Let,
-        Event::Let,
-        Event::Tick,
-        Event::Let,
-        Event::Tick,
-        Event::Print("0".to_owned()),
-        Event::Let,
-        Event::Print("1".to_owned()),
-        Event::Let,
-        Event::Let,
-        Event::Let,
-        Event::Tick,
-        Event::Print("1".to_owned()),
-        Event::Let,
-        Event::Print("2".to_owned()),
-        Event::Let,
-        Event::Let,
-        Event::Let,
-        Event::Tick,
-        Event::Print("2".to_owned()),
-        Event::Let,
-        Event::Print("3".to_owned()),
-        Event::Let,
-        Event::Let,
-    ]);
+    "#,
+            api
+        )
+        .expect("eval failed"),
+        vec![
+            Event::Let,
+            Event::Let,
+            Event::Tick,
+            Event::Let,
+            Event::Tick,
+            Event::Print("0".to_owned()),
+            Event::Let,
+            Event::Print("1".to_owned()),
+            Event::Let,
+            Event::Let,
+            Event::Let,
+            Event::Tick,
+            Event::Print("1".to_owned()),
+            Event::Let,
+            Event::Print("2".to_owned()),
+            Event::Let,
+            Event::Let,
+            Event::Let,
+            Event::Tick,
+            Event::Print("2".to_owned()),
+            Event::Let,
+            Event::Print("3".to_owned()),
+            Event::Let,
+            Event::Let,
+        ]
+    );
 }
 
-
 #[test]
-fn if_if(){
+fn if_if() {
     let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
 
-    assert_eq!(eval_all(r#"
+    assert_eq!(
+        eval_all(
+            r#"
         x = 30
         if x > 20
             if x < 40
@@ -177,37 +228,47 @@ fn if_if(){
         if x < 20
             print "Small"
         end
-    "#,api).expect("eval failed"),vec![
-        Event::Let,
-        Event::Tick,
-        Event::Tick,
-        Event::Print("Medium".to_owned()),
-        Event::Tick,
-        Event::Tick
-    ]);
+    "#,
+            api
+        )
+        .expect("eval failed"),
+        vec![
+            Event::Let,
+            Event::Tick,
+            Event::Tick,
+            Event::Print("Medium".to_owned()),
+            Event::Tick,
+            Event::Tick
+        ]
+    );
 }
 
 #[test]
-fn not_not(){
+fn not_not() {
     let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
 
-    assert_eq!(eval_all(r#"
+    assert_eq!(
+        eval_all(
+            r#"
         x = true
         if not not x
             print "na na..."
         end
-    "#,api).expect("eval failed"),vec![
-        Event::Let,
-        Event::Tick,
-        Event::Print("na na...".to_owned())
-    ]);
+    "#,
+            api
+        )
+        .expect("eval failed"),
+        vec![Event::Let, Event::Tick, Event::Print("na na...".to_owned())]
+    );
 }
 
 #[test]
-fn not_toggle(){
+fn not_toggle() {
     let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
 
-    assert_eq!(eval_all(r#"
+    assert_eq!(
+        eval_all(
+            r#"
         z = true
         loop 3
             z = not z
@@ -215,39 +276,53 @@ fn not_toggle(){
                 print "Switching..."
             end
         end
-    "#,api).expect("eval failed"),vec![
-        Event::Let,
-        Event::Tick,
-        Event::Let,
-        Event::Tick,
-        Event::Print("Switching...".to_owned()),
-        Event::Let,
-        Event::Tick,
-        Event::Let,
-        Event::Tick,
-        Event::Print("Switching...".to_owned())
-    ]);
+    "#,
+            api
+        )
+        .expect("eval failed"),
+        vec![
+            Event::Let,
+            Event::Tick,
+            Event::Let,
+            Event::Tick,
+            Event::Print("Switching...".to_owned()),
+            Event::Let,
+            Event::Tick,
+            Event::Let,
+            Event::Tick,
+            Event::Print("Switching...".to_owned())
+        ]
+    );
 }
 
 #[test]
-fn not_bin(){
+fn not_bin() {
     let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
 
-    assert_eq!(eval_all(r#"
+    assert_eq!(
+        eval_all(
+            r#"
         if not (3 > 5)
             print "3 is not greater than 5."
         end
-    "#,api).expect("eval failed"),vec![
-        Event::Tick,
-        Event::Print("3 is not greater than 5.".to_owned())
-    ]);
+    "#,
+            api
+        )
+        .expect("eval failed"),
+        vec![
+            Event::Tick,
+            Event::Print("3 is not greater than 5.".to_owned())
+        ]
+    );
 }
 
 #[test]
-fn loop_if(){
+fn loop_if() {
     let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
 
-    assert_eq!(eval_all(r#"
+    assert_eq!(
+        eval_all(
+            r#"
         n = 2
         loop 4
             n = n*n
@@ -255,64 +330,85 @@ fn loop_if(){
                 print n
             end
         end
-    "#,api).expect("eval failed"),vec![
-        Event::Let,
-        Event::Tick,
-        Event::Let,
-        Event::Tick,
-        Event::Let,
-        Event::Tick,
-        Event::Let,
-        Event::Tick,
-        Event::Let,
-        Event::Tick,
-        Event::Print("65536".to_owned())
-    ]);
+    "#,
+            api
+        )
+        .expect("eval failed"),
+        vec![
+            Event::Let,
+            Event::Tick,
+            Event::Let,
+            Event::Tick,
+            Event::Let,
+            Event::Tick,
+            Event::Let,
+            Event::Tick,
+            Event::Let,
+            Event::Tick,
+            Event::Print("65536".to_owned())
+        ]
+    );
 }
 
 #[test]
-fn complex_binary(){
+fn complex_binary() {
     let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
 
-    assert_eq!(eval_all(r#"
+    assert_eq!(
+        eval_all(
+            r#"
         n = (3+5)*8/2+50
         m = (n+8)/(15-5)+(5+1)*(2+3)/10-2
         if m*8 < n
             print n-m*8
         end
-    "#,api).expect("eval failed"),vec![
-        Event::Let,
-        Event::Let,
-        Event::Tick,
-        Event::Print("2".to_owned())
-    ]);
+    "#,
+            api
+        )
+        .expect("eval failed"),
+        vec![
+            Event::Let,
+            Event::Let,
+            Event::Tick,
+            Event::Print("2".to_owned())
+        ]
+    );
 }
 
 #[test]
-fn released_scope(){
+fn released_scope() {
     let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
 
-    assert_eq!(eval_all(r#"
+    assert_eq!(
+        eval_all(
+            r#"
         x = 0
         loop 3
             x = x + 1
         end
         print x
-    "#,api).expect("eval failed"),vec![
-        Event::Let,
-        Event::Tick,
-        Event::Let,
-        Event::Let,
-        Event::Let,
-        Event::Print("3".to_owned())
-    ]);
+    "#,
+            api
+        )
+        .expect("eval failed"),
+        vec![
+            Event::Let,
+            Event::Tick,
+            Event::Let,
+            Event::Let,
+            Event::Let,
+            Event::Print("3".to_owned())
+        ]
+    );
 }
 
 #[test]
-fn switch_direction(){
+fn switch_direction() {
     let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
 
-    assert_eq!(eval_all(r#"
+    assert_eq!(
+        eval_all(
+            r#"
         d = forward
         s = true
         loop 4
@@ -335,73 +431,90 @@ fn switch_direction(){
             s = true
             move d
         end
-    "#,api).expect("eval failed"),vec![
-        Event::Let,
-        Event::Let,
-        Event::Tick,
-        Event::Tick,
-        Event::Let,
-        Event::Let,
-        Event::Tick,
-        Event::Tick,
-        Event::Tick,
-        Event::Let,
-        Event::Move(Direction::Right),
-        Event::Tick,
-        Event::Tick,
-        Event::Let,
-        Event::Let,
-        Event::Tick,
-        Event::Tick,
-        Event::Let,
-        Event::Move(Direction::Back),
-        Event::Tick,
-        Event::Tick,
-        Event::Tick,
-        Event::Let,
-        Event::Let,
-        Event::Tick,
-        Event::Let,
-        Event::Move(Direction::Left),
-        Event::Tick,
-        Event::Tick,
-        Event::Tick,
-        Event::Tick,
-        Event::Let,
-        Event::Let,
-        Event::Let,
-        Event::Move(Direction::Forward),
-    ]);
+    "#,
+            api
+        )
+        .expect("eval failed"),
+        vec![
+            Event::Let,
+            Event::Let,
+            Event::Tick,
+            Event::Tick,
+            Event::Let,
+            Event::Let,
+            Event::Tick,
+            Event::Tick,
+            Event::Tick,
+            Event::Let,
+            Event::Move(Direction::Right),
+            Event::Tick,
+            Event::Tick,
+            Event::Let,
+            Event::Let,
+            Event::Tick,
+            Event::Tick,
+            Event::Let,
+            Event::Move(Direction::Back),
+            Event::Tick,
+            Event::Tick,
+            Event::Tick,
+            Event::Let,
+            Event::Let,
+            Event::Tick,
+            Event::Let,
+            Event::Move(Direction::Left),
+            Event::Tick,
+            Event::Tick,
+            Event::Tick,
+            Event::Tick,
+            Event::Let,
+            Event::Let,
+            Event::Let,
+            Event::Move(Direction::Forward),
+        ]
+    );
 }
 
-
-
 #[test]
-fn sleep_timer_step(){
+fn sleep_timer_step() {
     let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
 
-    assert_eq!(eval_all(r#"
+    assert_eq!(
+        eval_all(
+            r#"
         d = 0.0
         loop 5
             d = d+0.5
             sleep d
         end
-    "#,api).expect("eval failed"),vec![
-        Event::Let,
-        Event::Tick,
-        Event::Let,Event::Sleep(0.5),
-        Event::Let,Event::Sleep(1.0),
-        Event::Let,Event::Sleep(1.5),
-        Event::Let,Event::Sleep(2.0),
-        Event::Let,Event::Sleep(2.5),
-    ]);
+    "#,
+            api
+        )
+        .expect("eval failed"),
+        vec![
+            Event::Let,
+            Event::Tick,
+            Event::Let,
+            Event::Sleep(0.5),
+            Event::Let,
+            Event::Sleep(1.0),
+            Event::Let,
+            Event::Sleep(1.5),
+            Event::Let,
+            Event::Sleep(2.0),
+            Event::Let,
+            Event::Sleep(2.5),
+        ]
+    );
 }
 
 #[test]
-fn complex_while(){
+fn complex_while() {
     let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
 
-    assert_eq!(eval_all(r#"
+    assert_eq!(
+        eval_all(
+            r#"
         x = 0
         y = 0
         while x < 5
@@ -411,74 +524,89 @@ fn complex_while(){
             y = y + 1
         end
         print x+y
-    "#,api).expect("eval failed"),vec![
-        Event::Let,
-        Event::Let,
-        Event::Tick,
-        Event::Let,
-        Event::Let,
-        Event::Let,
-        Event::Let,
-        Event::Let,
-        Event::Tick,
-        Event::Let,
-        Event::Let,
-        Event::Let,
-        Event::Print("8".to_owned())
-    ]);
+    "#,
+            api
+        )
+        .expect("eval failed"),
+        vec![
+            Event::Let,
+            Event::Let,
+            Event::Tick,
+            Event::Let,
+            Event::Let,
+            Event::Let,
+            Event::Let,
+            Event::Let,
+            Event::Tick,
+            Event::Let,
+            Event::Let,
+            Event::Let,
+            Event::Print("8".to_owned())
+        ]
+    );
 }
 
-
 #[test]
-fn complex_api(){
+fn complex_api() {
     struct TestApi;
     impl ExternalApi for TestApi {
         fn is_touched(&self) -> bool {
             false
         }
-        fn is_empty(&self) -> bool {
+        fn is_empty(&self, _: Direction) -> bool {
             true
         }
     }
     let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(TestApi);
 
-    assert_eq!(eval_all(r#"
+    assert_eq!(
+        eval_all(
+            r#"
         x = is_touched()
-        y = is_empty()
+        y = is_empty(right)
         if x == y
             print "x == y"
         end
         if not x == y
             print "x != y"
         end
-    "#,api).expect("eval failed"),vec![
-        Event::Let,
-        Event::Let,
-        Event::Tick,
-        Event::Tick,
-        Event::Print("x != y".to_owned())
-    ]);
+    "#,
+            api
+        )
+        .expect("eval failed"),
+        vec![
+            Event::Let,
+            Event::Let,
+            Event::Tick,
+            Event::Tick,
+            Event::Print("x != y".to_owned())
+        ]
+    );
 }
 
 #[test]
-fn dynamic_api(){
+fn dynamic_api() {
     struct TestApi;
     impl ExternalApi for TestApi {
         fn is_touched(&self) -> bool {
             false
         }
-        fn is_empty(&self) -> bool {
+        fn is_empty(&self, _: Direction) -> bool {
             true
         }
     }
     let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(TestApi);
 
-    assert_eq!(eval_all(r#"
+    assert_eq!(
+        eval_all(
+            r#"
         if not is_touched()
             print "false"
         end
-    "#,api).expect("eval failed"),vec![
-        Event::Tick,
-        Event::Print("false".to_owned())
-    ]);
+    "#,
+            api
+        )
+        .expect("eval failed"),
+        vec![Event::Tick, Event::Print("false".to_owned())]
+    );
 }

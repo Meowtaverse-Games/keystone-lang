@@ -5,30 +5,30 @@ pub enum Error {
     MismatchedTypes {
         op: Op,
         left: Type,
-        right: Type
+        right: Type,
     },
     InvalidOperandType {
         op: Op,
-        typ: Type
+        typ: Type,
     },
-    InvalidUnaryOperandType{
+    InvalidUnaryOperandType {
         op: UnaryOp,
-        typ: Type
+        typ: Type,
     },
     UnexpectedType {
         statement: String,
         found_type: Type,
     },
     SyntaxError {
-        messages: Vec<String>
+        messages: Vec<String>,
     },
     NameError {
-        name: String
+        name: String,
     },
-    ArgError{
+    ArgError {
         called: String,
         expected: u8,
-        got: u8
+        got: u8,
     },
     ZeroDivisionError,
     TooLargeNumber,

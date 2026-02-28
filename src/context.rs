@@ -1,14 +1,16 @@
-use std::collections::HashMap;
 use crate::ast::{Expr, Type};
+use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct TypeContext {
-    pub vars: HashMap<String, Type>
+    pub vars: HashMap<String, Type>,
 }
 
 impl TypeContext {
     pub fn new() -> Self {
-        Self { vars: HashMap::new() }
+        Self {
+            vars: HashMap::new(),
+        }
     }
 
     pub fn set(&mut self, name: &str, typ: Type) {
@@ -20,14 +22,16 @@ impl TypeContext {
     }
 }
 
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub struct RuntimeContext {
-    pub vars: HashMap<String, Expr>
+    pub vars: HashMap<String, Expr>,
 }
 
 impl RuntimeContext {
     pub fn new() -> Self {
-        Self { vars: HashMap::new() }
+        Self {
+            vars: HashMap::new(),
+        }
     }
 
     pub fn set(&mut self, name: &str, expr: Expr) {
@@ -35,9 +39,9 @@ impl RuntimeContext {
     }
 
     pub fn get(&self, name: &str) -> &Expr {
-        match self.vars.get(name){
+        match self.vars.get(name) {
             Some(x) => x,
-            None => unreachable!("undefined variable")
+            None => unreachable!("undefined variable"),
         }
     }
 }

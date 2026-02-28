@@ -4,11 +4,11 @@ pub enum Statement {
     Move(Expr),
     Turn(Expr),
     Dig(Expr),
-    Let(String,Expr),
-    Loop(Expr,Vec<Statement>),
-    While(Expr,Vec<Statement>),
-    If(Expr,Vec<Statement>),
-    Sleep(Expr)
+    Let(String, Expr),
+    Loop(Expr, Vec<Statement>),
+    While(Expr, Vec<Statement>),
+    If(Expr, Vec<Statement>),
+    Sleep(Expr),
 }
 
 #[derive(Debug, Clone)]
@@ -19,44 +19,65 @@ pub enum Expr {
     Boolean(bool),
     Direction(Direction),
     Var(String),
-    Call{
-        callee:Callee,
-        args:Vec<Box<Expr>>
+    Call {
+        callee: Callee,
+        args: Vec<Box<Expr>>,
     },
     Unary {
         op: UnaryOp,
-        exp: Box<Expr>
+        exp: Box<Expr>,
     },
     Binary {
         op: Op,
         lhs: Box<Expr>,
-        rhs: Box<Expr>
-    }
+        rhs: Box<Expr>,
+    },
 }
 #[derive(Debug, Clone, PartialEq)]
 pub enum Type {
-    Uint,Float,String,Boolean,Direction,Side
+    Uint,
+    Float,
+    String,
+    Boolean,
+    Direction,
+    Side,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Op {
-    Add, Sub, Mul, Div,
-    Eq, Neq, Lt, Gt, Le, Ge,
-    And,Or
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Eq,
+    Neq,
+    Lt,
+    Gt,
+    Le,
+    Ge,
+    And,
+    Or,
 }
 #[derive(Debug, Clone, PartialEq)]
 pub enum UnaryOp {
-    Not
+    Not,
 }
 #[derive(Debug, Clone, PartialEq)]
 pub enum Direction {
-    Left,Right,Forward,Back,Up,Down
+    Left,
+    Right,
+    Forward,
+    Back,
+    Up,
+    Down,
 }
 #[derive(Debug, Clone, PartialEq)]
-pub enum Side{
-    Left,Right
+pub enum Side {
+    Left,
+    Right,
 }
 #[derive(Debug, Clone, PartialEq)]
-pub enum Callee{
-    IsTouched,IsEmpty
+pub enum Callee {
+    IsTouched,
+    IsEmpty,
 }
