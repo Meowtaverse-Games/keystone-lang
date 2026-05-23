@@ -1,4 +1,7 @@
-use std::sync::{Arc, Mutex};
+use std::{
+    collections::HashSet,
+    sync::{Arc, Mutex},
+};
 
 use keystone_lang::{Direction, Event, EventIterator, ExternalApi, eval};
 
@@ -8,6 +11,10 @@ impl ExternalApi for MyApi {
         true
     }
     fn is_empty(&self, _: Direction) -> bool {
+        true
+    }
+    fn send_signal(&self, _channel: &str) {}
+    fn receive_signal(&self, _channel: &str) -> bool {
         true
     }
 }
@@ -249,6 +256,7 @@ fn touch_ground() {
     struct TestApi {
         touched: Mutex<bool>,
         empty: Mutex<bool>,
+        signals: Mutex<HashSet<String>>,
     }
 
     impl ExternalApi for TestApi {
@@ -258,11 +266,24 @@ fn touch_ground() {
         fn is_empty(&self, _: Direction) -> bool {
             *self.empty.lock().unwrap()
         }
+        fn send_signal(&self, channel: &str) {
+            if let Ok(mut g) = self.signals.lock() {
+                g.insert(channel.to_owned());
+            }
+        }
+        fn receive_signal(&self, channel: &str) -> bool {
+            if let Ok(mut g) = self.signals.lock() {
+                g.remove(channel)
+            } else {
+                false
+            }
+        }
     }
 
     let test_api = Arc::new(TestApi {
         touched: Mutex::new(false),
         empty: Mutex::new(true),
+        signals: Mutex::new(HashSet::new()),
     });
 
     let api_for_eval: Arc<dyn ExternalApi + Send + Sync> = test_api.clone();
@@ -274,6 +295,8 @@ fn touch_ground() {
             move down
             y = y+1
         end
+        send y
+        receive y
         print y
     "#,
         api_for_eval,
@@ -288,6 +311,8 @@ fn touch_ground() {
     assert_eq!(next(&mut iter), Event::Move(Direction::Down));
     assert_eq!(next(&mut iter), Event::Let);
     *test_api.touched.lock().unwrap() = true;
+    assert_eq!(next(&mut iter), Event::Send("3".into()));
+    assert_eq!(next(&mut iter), Event::Receive("3".into()));
     assert_eq!(next(&mut iter), Event::Print("3".into()));
     assert!(iter.next().is_none());
 }
@@ -318,4 +343,160 @@ fn complex_frame() {
     for _ in 0..1000 {
         assert_eq!(next(&mut iter), Event::Tick);
     }
+}
+
+#[test]
+fn doubled_communication() {
+    struct TestApi {
+        touched: Mutex<bool>,
+        empty: Mutex<bool>,
+        signals: Mutex<HashSet<String>>,
+    }
+
+    impl ExternalApi for TestApi {
+        fn is_touched(&self) -> bool {
+            *self.touched.lock().unwrap()
+        }
+        fn is_empty(&self, _: Direction) -> bool {
+            *self.empty.lock().unwrap()
+        }
+        fn send_signal(&self, channel: &str) {
+            if let Ok(mut g) = self.signals.lock() {
+                g.insert(channel.to_owned());
+            }
+        }
+        fn receive_signal(&self, channel: &str) -> bool {
+            if let Ok(mut g) = self.signals.lock() {
+                g.remove(channel)
+            } else {
+                false
+            }
+        }
+    }
+
+    let test_api = Arc::new(TestApi {
+        touched: Mutex::new(false),
+        empty: Mutex::new(true),
+        signals: Mutex::new(HashSet::new()),
+    });
+
+    let api_for_eval: Arc<dyn ExternalApi + Send + Sync> = test_api.clone();
+
+    let mut stone_a = eval(
+        r#"
+        send 1
+        move left
+        "#,
+        api_for_eval.clone(),
+    )
+    .expect("eval a failed");
+    let mut stone_b = eval(
+        r#"
+        receive 1
+        move right
+    "#,
+        api_for_eval,
+    )
+    .expect("eval b failed");
+
+    assert_eq!(next(&mut stone_b), Event::Wait);
+    assert_eq!(next(&mut stone_b), Event::Wait);
+    assert_eq!(next(&mut stone_a), Event::Send("1".to_owned()));
+    assert_eq!(next(&mut stone_a), Event::Move(Direction::Left));
+    assert!(stone_a.next().is_none());
+    assert_eq!(next(&mut stone_b), Event::Receive("1".to_owned()));
+    assert_eq!(next(&mut stone_b), Event::Move(Direction::Right));
+    assert!(stone_b.next().is_none());
+}
+
+#[test]
+fn complex_situation() {
+    struct TestApi {
+        touched: Mutex<bool>,
+        empty: Mutex<bool>,
+        shared_signals: Arc<Mutex<HashSet<String>>>,
+    }
+
+    impl ExternalApi for TestApi {
+        fn is_touched(&self) -> bool {
+            *self.touched.lock().unwrap()
+        }
+        fn is_empty(&self, _: Direction) -> bool {
+            *self.empty.lock().unwrap()
+        }
+        fn send_signal(&self, channel: &str) {
+            if let Ok(mut g) = self.shared_signals.lock() {
+                g.insert(channel.to_owned());
+            }
+        }
+        fn receive_signal(&self, channel: &str) -> bool {
+            if let Ok(mut g) = self.shared_signals.lock() {
+                g.remove(channel)
+            } else {
+                false
+            }
+        }
+    }
+
+    let global_signals = Arc::new(Mutex::new(HashSet::new()));
+
+    let api_a = Arc::new(TestApi {
+        touched: Mutex::new(false),
+        empty: Mutex::new(false),
+        shared_signals: global_signals.clone(),
+    });
+    let api_b = Arc::new(TestApi {
+        touched: Mutex::new(false),
+        empty: Mutex::new(false),
+        shared_signals: global_signals.clone(),
+    });
+    let api_c = Arc::new(TestApi {
+        touched: Mutex::new(false),
+        empty: Mutex::new(false),
+        shared_signals: global_signals.clone(),
+    });
+
+    let mut stone_a = eval(
+        r#"
+        dig down
+        send 1
+        "#,
+        api_a.clone(),
+    )
+    .expect("eval a failed");
+    let mut stone_b = eval(
+        r#"
+        receive 1
+        while is_empty(right)
+            move right
+        end
+        send 2
+        "#,
+        api_b.clone(),
+    )
+    .expect("eval b failed");
+    let mut stone_c = eval(
+        r#"
+        receive 2
+        move up
+        "#,
+        api_c.clone(),
+    )
+    .expect("eval c failed");
+
+    assert_eq!(next(&mut stone_b), Event::Wait);
+    assert_eq!(next(&mut stone_c), Event::Wait);
+    assert_eq!(next(&mut stone_a), Event::Dig(Direction::Down));
+    *api_b.empty.lock().unwrap() = true;
+    assert_eq!(next(&mut stone_a), Event::Send("1".to_owned()));
+    assert!(stone_a.next().is_none());
+    assert_eq!(next(&mut stone_b), Event::Receive("1".to_owned()));
+    assert_eq!(next(&mut stone_b), Event::Tick);
+    assert_eq!(next(&mut stone_b), Event::Move(Direction::Right));
+    assert_eq!(next(&mut stone_b), Event::Move(Direction::Right));
+    *api_b.empty.lock().unwrap() = false;
+    assert_eq!(next(&mut stone_b), Event::Send("2".to_owned()));
+    assert_eq!(next(&mut stone_c), Event::Receive("2".to_owned()));
+    assert_eq!(next(&mut stone_c), Event::Move(Direction::Up));
+    assert!(stone_c.next().is_none());
 }

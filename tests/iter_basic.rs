@@ -1,5 +1,8 @@
 use keystone_lang::{Direction, Event, EventIterator, ExternalApi, eval};
-use std::sync::{Arc, Mutex};
+use std::{
+    collections::HashSet,
+    sync::{Arc, Mutex},
+};
 
 struct MyApi;
 impl ExternalApi for MyApi {
@@ -7,6 +10,10 @@ impl ExternalApi for MyApi {
         true
     }
     fn is_empty(&self, _: Direction) -> bool {
+        true
+    }
+    fn send_signal(&self, _channel: &str) {}
+    fn receive_signal(&self, _channel: &str) -> bool {
         true
     }
 }
@@ -229,6 +236,7 @@ fn stateful_api() {
     struct TestApi {
         touched: Mutex<bool>,
         empty: Mutex<bool>,
+        signals: Mutex<HashSet<String>>,
     }
 
     impl ExternalApi for TestApi {
@@ -238,11 +246,24 @@ fn stateful_api() {
         fn is_empty(&self, _: Direction) -> bool {
             *self.empty.lock().unwrap()
         }
+        fn send_signal(&self, channel: &str) {
+            if let Ok(mut g) = self.signals.lock() {
+                g.insert(channel.to_owned());
+            }
+        }
+        fn receive_signal(&self, channel: &str) -> bool {
+            if let Ok(mut g) = self.signals.lock() {
+                g.remove(channel)
+            } else {
+                false
+            }
+        }
     }
 
     let test_api = Arc::new(TestApi {
         touched: Mutex::new(false),
         empty: Mutex::new(true),
+        signals: Mutex::new(HashSet::new()),
     });
 
     let api_for_eval: Arc<dyn ExternalApi + Send + Sync> = test_api.clone();

@@ -10,12 +10,16 @@ impl ExternalApi for MyApi {
     fn is_empty(&self, _: Direction) -> bool {
         true
     }
+    fn send_signal(&self, _channel: &str) {}
+    fn receive_signal(&self, _channel: &str) -> bool {
+        true
+    }
 }
 
 #[test]
 fn unexpected_type() {
     let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
-    let cases: [(&str, &str, Error); 12] = [
+    let cases: [(&str, &str, Error); 18] = [
         (
             "move <String>",
             r#"move "Hello""#,
@@ -110,6 +114,54 @@ fn unexpected_type() {
             Error::UnexpectedType {
                 statement: String::from("Dig"),
                 found_type: Type::Boolean,
+            },
+        ),
+        (
+            "send <Float>",
+            r#"send 2.5"#,
+            Error::UnexpectedType {
+                statement: String::from("Send"),
+                found_type: Type::Float,
+            },
+        ),
+        (
+            "send <Boolean>",
+            r#"send true"#,
+            Error::UnexpectedType {
+                statement: String::from("Send"),
+                found_type: Type::Boolean,
+            },
+        ),
+        (
+            "send <Direction>",
+            r#"send right"#,
+            Error::UnexpectedType {
+                statement: String::from("Send"),
+                found_type: Type::Direction,
+            },
+        ),
+        (
+            "receive <Float>",
+            r#"receive 5.0"#,
+            Error::UnexpectedType {
+                statement: String::from("Receive"),
+                found_type: Type::Float,
+            },
+        ),
+        (
+            "receive <Boolean>",
+            r#"receive true"#,
+            Error::UnexpectedType {
+                statement: String::from("Receive"),
+                found_type: Type::Boolean,
+            },
+        ),
+        (
+            "receive <Direction>",
+            r#"receive down"#,
+            Error::UnexpectedType {
+                statement: String::from("Receive"),
+                found_type: Type::Direction,
             },
         ),
     ];
@@ -748,7 +800,7 @@ fn too_large_number() {
 #[test]
 fn reserved_words() {
     let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
-    let cases: [(&str, &str, Error); 21] = [
+    let cases: [(&str, &str, Error); 23] = [
         (
             "print = <Expr>",
             r#"print = "print""#,
@@ -938,6 +990,24 @@ fn reserved_words() {
                 )],
             },
         ),
+        (
+            "send = <Expr>",
+            r#"send = "send""#,
+            Error::SyntaxError {
+                messages: vec![String::from(
+                    "reserved word 'send' cannot be used as a variable.",
+                )],
+            },
+        ),
+        (
+            "receive = <Expr>",
+            r#"receive = "receive""#,
+            Error::SyntaxError {
+                messages: vec![String::from(
+                    "reserved word 'receive' cannot be used as a variable.",
+                )],
+            },
+        ),
     ];
 
     for (case, src, expected) in cases {
@@ -955,6 +1025,10 @@ fn arg_error() {
             false
         }
         fn is_empty(&self, _: Direction) -> bool {
+            true
+        }
+        fn send_signal(&self, _channel: &str) {}
+        fn receive_signal(&self, _channel: &str) -> bool {
             true
         }
     }

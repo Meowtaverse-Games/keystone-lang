@@ -11,6 +11,10 @@ impl ExternalApi for MyApi {
     fn is_empty(&self, _: Direction) -> bool {
         true
     }
+    fn send_signal(&self, _channel: &str) {}
+    fn receive_signal(&self, _channel: &str) -> bool {
+        true
+    }
 }
 
 //helper(weak)

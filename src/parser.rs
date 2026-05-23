@@ -262,12 +262,21 @@ fn statement_parser<'a>() -> impl Parser<'a, &'a str, Statement, extra::Err<Rich
             .then_ignore(new_space())
             .then_ignore(just("end").ignored())
             .map(|(cond, body)| Statement::If(cond, body));
-
+        let send = just("send")
+            .padded_by(new_space())
+            .ignore_then(expr_parser())
+            .map(Statement::Send);
+        let receive = just("receive")
+            .padded_by(new_space())
+            .ignore_then(expr_parser())
+            .map(Statement::Receive);
         print
             .or(_move)
             .or(turn)
             .or(dig)
             .or(sleep)
+            .or(send)
+            .or(receive)
             .or(_let)
             .or(_loop)
             .or(_while)
@@ -305,6 +314,8 @@ fn is_reserved(s: &str) -> bool {
             | "down"
             | "is_touched"
             | "is_empty"
+            | "send"
+            | "receive"
     )
 }
 

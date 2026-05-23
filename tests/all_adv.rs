@@ -10,6 +10,10 @@ impl ExternalApi for MyApi {
     fn is_empty(&self, _: Direction) -> bool {
         true
     }
+    fn send_signal(&self, _channel: &str) {}
+    fn receive_signal(&self, _channel: &str) -> bool {
+        true
+    }
 }
 
 #[test]
@@ -556,6 +560,10 @@ fn complex_api() {
         fn is_empty(&self, _: Direction) -> bool {
             true
         }
+        fn send_signal(&self, _channel: &str) {}
+        fn receive_signal(&self, _channel: &str) -> bool {
+            true
+        }
     }
     let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(TestApi);
 
@@ -564,6 +572,7 @@ fn complex_api() {
             r#"
         x = is_touched()
         y = is_empty(right)
+        receive 100
         if x == y
             print "x == y"
         end
@@ -577,6 +586,7 @@ fn complex_api() {
         vec![
             Event::Let,
             Event::Let,
+            Event::Receive("100".to_owned()),
             Event::Tick,
             Event::Tick,
             Event::Print("x != y".to_owned())
@@ -594,12 +604,18 @@ fn dynamic_api() {
         fn is_empty(&self, _: Direction) -> bool {
             true
         }
+        fn send_signal(&self, _channel: &str) {}
+        fn receive_signal(&self, _channel: &str) -> bool {
+            true
+        }
     }
     let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(TestApi);
 
     assert_eq!(
         eval_all(
             r#"
+        n = 5
+        receive n
         if not is_touched()
             print "false"
         end
@@ -607,6 +623,11 @@ fn dynamic_api() {
             api
         )
         .expect("eval failed"),
-        vec![Event::Tick, Event::Print("false".to_owned())]
+        vec![
+            Event::Let,
+            Event::Receive("5".to_owned()),
+            Event::Tick,
+            Event::Print("false".to_owned())
+        ]
     );
 }

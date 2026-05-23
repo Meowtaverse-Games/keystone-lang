@@ -13,6 +13,9 @@ pub enum Event {
     Sleep(f32),
     Let,
     Tick,
+    Send(String),
+    Receive(String),
+    Wait,
 }
 
 fn expr(
@@ -268,6 +271,21 @@ impl EventIterator {
                 self.ctx.set(&s, rx);
                 Ok(Some(Event::Let))
             }
+            Statement::Send(x) => {
+                let v = expr(x, &mut self.ctx, Arc::clone(&self.api))?;
+                let s = stringize(&v);
+                self.api.send_signal(&s);
+                Ok(Some(Event::Send(s)))
+            }
+            Statement::Receive(x) => {
+                let v = expr(x, &mut self.ctx, Arc::clone(&self.api))?;
+                let s = stringize(&v);
+                if self.api.receive_signal(&s) {
+                    Ok(Some(Event::Receive(s)))
+                } else {
+                    Ok(Some(Event::Wait))
+                }
+            }
         }
     }
 }
@@ -293,6 +311,14 @@ impl Iterator for EventIterator {
                         *index = current_index + 1;
                     }
                     match self.process_statement(stmt) {
+                        Ok(Some(Event::Wait)) => {
+                            if let ExecutionFrame::Statement { index, .. } =
+                                &mut self.stack[frame_index]
+                            {
+                                *index = current_index;
+                            }
+                            return Some(Ok(Event::Wait));
+                        }
                         Ok(Some(event)) => return Some(Ok(event)),
                         Ok(None) => return Some(Ok(Event::Tick)),
                         Err(e) => return Some(Err(e)),

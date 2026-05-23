@@ -199,6 +199,24 @@ pub fn check(input: &Vec<Statement>, ctx: &mut TypeContext) -> Result<(), Error>
                     check(y, ctx)?
                 }
             }
+            Statement::Send(x) => {
+                let t = expr_check(x, ctx)?;
+                if !matches!(t, Type::Uint | Type::String) {
+                    return Err(Error::UnexpectedType {
+                        statement: String::from("Send"),
+                        found_type: t,
+                    });
+                }
+            }
+            Statement::Receive(x) => {
+                let t = expr_check(x, ctx)?;
+                if !matches!(t, Type::Uint | Type::String) {
+                    return Err(Error::UnexpectedType {
+                        statement: String::from("Receive"),
+                        found_type: t,
+                    });
+                }
+            }
         }
     }
     Ok(())

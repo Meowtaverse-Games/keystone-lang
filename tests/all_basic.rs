@@ -10,6 +10,10 @@ impl ExternalApi for MyApi {
     fn is_empty(&self, _: Direction) -> bool {
         true
     }
+    fn send_signal(&self, _channel: &str) {}
+    fn receive_signal(&self, _channel: &str) -> bool {
+        true
+    }
 }
 
 #[test]
@@ -345,10 +349,14 @@ fn api() {
         fn is_empty(&self, _: Direction) -> bool {
             false
         }
+        fn send_signal(&self, _channel: &str) {}
+        fn receive_signal(&self, _channel: &str) -> bool {
+            true
+        }
     }
     let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(TestApi);
 
-    let cases: [(&str, &str, Vec<Event>); 2] = [
+    let cases: [(&str, &str, Vec<Event>); 6] = [
         (
             "is_touched()",
             r#"print is_touched()"#,
@@ -358,6 +366,26 @@ fn api() {
             "is_empty(<Direction>)",
             r#"print is_empty(right)"#,
             vec![Event::Print("false".to_owned())],
+        ),
+        (
+            "send <Uint>",
+            r#"send 1"#,
+            vec![Event::Send("1".to_owned())],
+        ),
+        (
+            "send <String>",
+            r#"send "hi""#,
+            vec![Event::Send("hi".to_owned())],
+        ),
+        (
+            "receive <Uint>",
+            r#"receive 1"#,
+            vec![Event::Receive("1".to_owned())],
+        ),
+        (
+            "receive <String>",
+            r#"receive "hi""#,
+            vec![Event::Receive("hi".to_owned())],
         ),
     ];
 

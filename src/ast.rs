@@ -9,6 +9,8 @@ pub enum Statement {
     While(Expr, Vec<Statement>),
     If(Expr, Vec<Statement>),
     Sleep(Expr),
+    Receive(Expr),
+    Send(Expr),
 }
 
 #[derive(Debug, Clone)]
