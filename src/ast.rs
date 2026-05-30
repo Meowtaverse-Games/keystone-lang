@@ -82,4 +82,5 @@ pub enum Side {
 pub enum Callee {
     IsTouched,
     IsEmpty,
+    Rand,
 }

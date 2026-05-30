@@ -40,6 +40,39 @@ fn expr(
                     unreachable!()
                 }
             }
+            Callee::Rand => match args.len() {
+                0 => {
+                    let val: f32 = rand::random();
+                    Ok(Expr::Float(val))
+                }
+                1 => {
+                    let limit = match expr(*args[0].clone(), ctx, Arc::clone(&api))? {
+                        Expr::Uint(n) => n,
+                        _ => unreachable!(),
+                    };
+                    if limit == 0 {
+                        Ok(Expr::Uint(0))
+                    } else {
+                        Ok(Expr::Uint(rand::random_range(0..limit)))
+                    }
+                }
+                2 => {
+                    let low = match expr(*args[0].clone(), ctx, Arc::clone(&api))? {
+                        Expr::Uint(n) => n,
+                        _ => unreachable!(),
+                    };
+                    let high = match expr(*args[1].clone(), ctx, Arc::clone(&api))? {
+                        Expr::Uint(n) => n,
+                        _ => unreachable!(),
+                    };
+                    if low >= high {
+                        Ok(Expr::Uint(low))
+                    } else {
+                        Ok(Expr::Uint(rand::random_range(low..high)))
+                    }
+                }
+                _ => unreachable!(),
+            },
         },
         Expr::Unary { op, exp } => {
             let x = expr(*exp, ctx, api)?;

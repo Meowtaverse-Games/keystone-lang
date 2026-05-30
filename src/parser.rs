@@ -5,6 +5,7 @@ fn callee_parser<'a>() -> impl Parser<'a, &'a str, Callee, extra::Err<Rich<'a, c
     text::ident::<&'a str, extra::Err<Rich<'a, char>>>().try_map(|name, span| match name {
         "is_touched" => Ok(Callee::IsTouched),
         "is_empty" => Ok(Callee::IsEmpty),
+        "rand" => Ok(Callee::Rand),
         _ => Err(Rich::custom(
             span,
             format!("unknown builtin function '{}'", name),
@@ -320,6 +321,7 @@ fn is_reserved(s: &str) -> bool {
             | "down"
             | "is_touched"
             | "is_empty"
+            | "rand"
             | "send"
             | "receive"
     )

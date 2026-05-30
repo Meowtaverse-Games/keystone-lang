@@ -367,6 +367,7 @@ fn api() {
             r#"print is_empty(right)"#,
             vec![Event::Print("false".to_owned())],
         ),
+        // randはadvにてテスト
         (
             "send <Uint>",
             r#"send 1"#,

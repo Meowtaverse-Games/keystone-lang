@@ -23,19 +23,27 @@ fn expr_check(input: &Expr, ctx: &mut TypeContext) -> Result<Type, Error> {
                     got: len,
                 }),
                 (Callee::IsEmpty, 1) => {
-                    let t = expr_check(&args[0], ctx)?;
-                    if let Type::Direction = t {
-                        Ok(Type::Boolean)
-                    } else {
-                        Err(Error::UnexpectedType {
-                            statement: String::from("Turn"),
-                            found_type: t,
-                        })
-                    }
+                    ensure_type(expr_check(&args[0], ctx)?, Type::Direction, "is_empty()")?;
+                    Ok(Type::Boolean)
                 }
                 (Callee::IsEmpty, _) => Err(Error::ArgError {
                     called: String::from("is_empty()"),
                     expected: 1,
+                    got: len,
+                }),
+                (Callee::Rand, 0) => Ok(Type::Float),
+                (Callee::Rand, 1) => {
+                    ensure_type(expr_check(&args[0], ctx)?, Type::Uint, "rand()")?;
+                    Ok(Type::Uint)
+                }
+                (Callee::Rand, 2) => {
+                    ensure_type(expr_check(&args[0], ctx)?, Type::Uint, "rand()")?;
+                    ensure_type(expr_check(&args[1], ctx)?, Type::Uint, "rand()")?;
+                    Ok(Type::Uint)
+                }
+                (Callee::Rand, _) => Err(Error::ArgError {
+                    called: String::from("rand()"),
+                    expected: 2,
                     got: len,
                 }),
             }

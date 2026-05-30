@@ -631,3 +631,30 @@ fn dynamic_api() {
         ]
     );
 }
+
+#[test]
+fn triple_random() {
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
+    assert_eq!(
+        eval_all(
+            r#"
+        zero = rand()
+        one = rand(100)
+        two = rand(5,10)
+        print 0.0 <= zero and zero < 1.0
+        print 0 <= one and one < 100
+        print 5 <= two and two < 10
+    "#,
+            api
+        )
+        .expect("eval failed"),
+        vec![
+            Event::Let,
+            Event::Let,
+            Event::Let,
+            Event::Print("true".to_owned()),
+            Event::Print("true".to_owned()),
+            Event::Print("true".to_owned()),
+        ]
+    );
+}
