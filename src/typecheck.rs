@@ -9,55 +9,46 @@ fn expr_check(input: &Expr, ctx: &mut TypeContext) -> Result<Type, Error> {
         Expr::Float(_) => Ok(Type::Float),
         Expr::Boolean(_) => Ok(Type::Boolean),
         Expr::Direction(_) => Ok(Type::Direction),
-        Expr::Var(s) => {
-            let ot = ctx.get(s);
-            match ot {
-                Some(t) => Ok(t.clone()),
-                None => Err(Error::NameError { name: s.to_owned() }),
-            }
-        }
+        Expr::Var(s) => ctx
+            .get(s)
+            .cloned()
+            .ok_or_else(|| Error::NameError { name: s.to_owned() }),
         Expr::Call { callee, args } => {
             let len = args.len() as u8;
-            match callee {
-                Callee::IsTouched => {
-                    if len == 0 {
+            match (callee, len) {
+                (Callee::IsTouched, 0) => Ok(Type::Boolean),
+                (Callee::IsTouched, _) => Err(Error::ArgError {
+                    called: String::from("is_touched()"),
+                    expected: 0,
+                    got: len,
+                }),
+                (Callee::IsEmpty, 1) => {
+                    let t = expr_check(&args[0], ctx)?;
+                    if let Type::Direction = t {
                         Ok(Type::Boolean)
                     } else {
-                        Err(Error::ArgError {
-                            called: String::from("is_touched()"),
-                            expected: 0,
-                            got: len,
+                        Err(Error::UnexpectedType {
+                            statement: String::from("Turn"),
+                            found_type: t,
                         })
                     }
                 }
-                Callee::IsEmpty => {
-                    if len == 1 {
-                        let t = expr_check(&args[0], ctx)?;
-                        match t {
-                            Type::Direction => Ok(Type::Boolean),
-                            _ => Err(Error::UnexpectedType {
-                                statement: String::from("Turn"),
-                                found_type: t,
-                            }),
-                        }
-                    } else {
-                        Err(Error::ArgError {
-                            called: String::from("is_empty()"),
-                            expected: 1,
-                            got: len,
-                        })
-                    }
-                }
+                (Callee::IsEmpty, _) => Err(Error::ArgError {
+                    called: String::from("is_empty()"),
+                    expected: 1,
+                    got: len,
+                }),
             }
         }
         Expr::Unary { op, exp } => {
             let typ = expr_check(exp, ctx)?;
-            match typ {
-                Type::Boolean => Ok(Type::Boolean),
-                _ => Err(Error::InvalidUnaryOperandType {
+            if let Type::Boolean = typ {
+                Ok(Type::Boolean)
+            } else {
+                Err(Error::InvalidUnaryOperandType {
                     op: op.clone(),
                     typ,
-                }),
+                })
             }
         }
         Expr::Binary { op, lhs, rhs } => {
@@ -70,152 +61,81 @@ fn expr_check(input: &Expr, ctx: &mut TypeContext) -> Result<Type, Error> {
                     right,
                 });
             }
-            let typ = left;
-            match typ {
-                Type::Uint => match op {
-                    Op::Add | Op::Sub | Op::Mul | Op::Div => Ok(Type::Uint),
-                    Op::Eq | Op::Neq | Op::Ge | Op::Le | Op::Gt | Op::Lt => Ok(Type::Boolean),
-                    _ => Err(Error::InvalidOperandType {
-                        op: op.clone(),
-                        typ: Type::Uint,
-                    }),
-                },
-                Type::Float => match op {
-                    Op::Add | Op::Sub | Op::Mul | Op::Div => Ok(Type::Float),
-                    Op::Eq | Op::Neq | Op::Ge | Op::Le | Op::Gt | Op::Lt => Ok(Type::Boolean),
-                    _ => Err(Error::InvalidOperandType {
-                        op: op.clone(),
-                        typ: Type::Float,
-                    }),
-                },
-                Type::String => match op {
-                    Op::Add => Ok(Type::String),
-                    Op::Eq | Op::Neq => Ok(Type::Boolean),
-                    _ => Err(Error::InvalidOperandType {
-                        op: op.clone(),
-                        typ: Type::String,
-                    }),
-                },
-                Type::Boolean => match op {
-                    Op::And | Op::Or => Ok(Type::Boolean),
-                    Op::Eq | Op::Neq => Ok(Type::Boolean),
-                    _ => Err(Error::InvalidOperandType {
-                        op: op.clone(),
-                        typ: Type::Boolean,
-                    }),
-                },
-                Type::Direction => match op {
-                    Op::Eq | Op::Neq => Ok(Type::Boolean),
-                    _ => Err(Error::InvalidOperandType {
-                        op: op.clone(),
-                        typ: Type::Direction,
-                    }),
-                },
-                other => Err(Error::InvalidOperandType {
+            match (left, op) {
+                (Type::Uint, Op::Add | Op::Sub | Op::Mul | Op::Div) => Ok(Type::Uint),
+                (Type::Uint, Op::Eq | Op::Neq | Op::Ge | Op::Le | Op::Gt | Op::Lt) => {
+                    Ok(Type::Boolean)
+                }
+                (Type::Float, Op::Add | Op::Sub | Op::Mul | Op::Div) => Ok(Type::Float),
+                (Type::Float, Op::Eq | Op::Neq | Op::Ge | Op::Le | Op::Gt | Op::Lt) => {
+                    Ok(Type::Boolean)
+                }
+                (Type::String, Op::Add) => Ok(Type::String),
+                (Type::String, Op::Eq | Op::Neq) => Ok(Type::Boolean),
+                (Type::Boolean, Op::And | Op::Or) => Ok(Type::Boolean),
+                (Type::Boolean, Op::Eq | Op::Neq) => Ok(Type::Boolean),
+                (Type::Direction, Op::Eq | Op::Neq) => Ok(Type::Boolean),
+                (typ, _) => Err(Error::InvalidOperandType {
                     op: op.clone(),
-                    typ: other,
+                    typ,
                 }),
             }
         }
     }
 }
 
-pub fn check(input: &Vec<Statement>, ctx: &mut TypeContext) -> Result<(), Error> {
+fn ensure_type(actual: Type, expected: Type, name: &str) -> Result<(), Error> {
+    if actual == expected {
+        Ok(())
+    } else {
+        Err(Error::UnexpectedType {
+            statement: String::from(name),
+            found_type: actual,
+        })
+    }
+}
+fn ensure_types(actual: Type, expected_list: &[Type], name: &str) -> Result<(), Error> {
+    if expected_list.contains(&actual) {
+        Ok(())
+    } else {
+        Err(Error::UnexpectedType {
+            statement: String::from(name),
+            found_type: actual,
+        })
+    }
+}
+
+pub fn check(input: &[Statement], ctx: &mut TypeContext) -> Result<(), Error> {
     for i in input {
         match i {
             Statement::Print(x) => {
                 expr_check(x, ctx)?;
             }
-            Statement::Move(x) => {
-                let t = expr_check(x, ctx)?;
-                if !matches!(t, Type::Direction) {
-                    return Err(Error::UnexpectedType {
-                        statement: String::from("Move"),
-                        found_type: t,
-                    });
-                }
-            }
-            Statement::Turn(x) => {
-                let t = expr_check(x, ctx)?;
-                if !matches!(t, Type::Direction) {
-                    return Err(Error::UnexpectedType {
-                        statement: String::from("Turn"),
-                        found_type: t,
-                    });
-                }
-            }
-            Statement::Dig(x) => {
-                let t = expr_check(x, ctx)?;
-                if !matches!(t, Type::Direction) {
-                    return Err(Error::UnexpectedType {
-                        statement: String::from("Dig"),
-                        found_type: t,
-                    });
-                }
-            }
-            Statement::Sleep(x) => {
-                let t = expr_check(x, ctx)?;
-                if !matches!(t, Type::Float) {
-                    return Err(Error::UnexpectedType {
-                        statement: String::from("Sleep"),
-                        found_type: t,
-                    });
-                }
-            }
+            Statement::Move(x) => ensure_type(expr_check(x, ctx)?, Type::Direction, "Move")?,
+            Statement::Turn(x) => ensure_type(expr_check(x, ctx)?, Type::Direction, "Turn")?,
+            Statement::Dig(x) => ensure_type(expr_check(x, ctx)?, Type::Direction, "Dig")?,
+            Statement::Sleep(x) => ensure_type(expr_check(x, ctx)?, Type::Float, "Sleep")?,
             Statement::Let(s, x) => {
                 let t = expr_check(x, ctx)?;
                 ctx.set(s, t);
             }
             Statement::Loop(x, y) => {
-                let t = expr_check(x, ctx)?;
-                if !matches!(t, Type::Uint) {
-                    return Err(Error::UnexpectedType {
-                        statement: String::from("Loop"),
-                        found_type: t,
-                    });
-                } else {
-                    check(y, ctx)?
-                }
+                ensure_type(expr_check(x, ctx)?, Type::Uint, "Loop")?;
+                check(y, ctx)?;
             }
             Statement::While(x, y) => {
-                let t = expr_check(x, ctx)?;
-                if !matches!(t, Type::Boolean) {
-                    return Err(Error::UnexpectedType {
-                        statement: String::from("While"),
-                        found_type: t,
-                    });
-                } else {
-                    check(y, ctx)?
-                }
+                ensure_type(expr_check(x, ctx)?, Type::Boolean, "While")?;
+                check(y, ctx)?;
             }
             Statement::If(x, y) => {
-                let t = expr_check(x, ctx)?;
-                if !matches!(t, Type::Boolean) {
-                    return Err(Error::UnexpectedType {
-                        statement: String::from("If"),
-                        found_type: t,
-                    });
-                } else {
-                    check(y, ctx)?
-                }
+                ensure_type(expr_check(x, ctx)?, Type::Boolean, "If")?;
+                check(y, ctx)?;
             }
             Statement::Send(x) => {
-                let t = expr_check(x, ctx)?;
-                if !matches!(t, Type::Uint | Type::String) {
-                    return Err(Error::UnexpectedType {
-                        statement: String::from("Send"),
-                        found_type: t,
-                    });
-                }
+                ensure_types(expr_check(x, ctx)?, &[Type::Uint, Type::String], "Send")?
             }
             Statement::Receive(x) => {
-                let t = expr_check(x, ctx)?;
-                if !matches!(t, Type::Uint | Type::String) {
-                    return Err(Error::UnexpectedType {
-                        statement: String::from("Receive"),
-                        found_type: t,
-                    });
-                }
+                ensure_types(expr_check(x, ctx)?, &[Type::Uint, Type::String], "Receive")?
             }
         }
     }

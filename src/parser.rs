@@ -104,19 +104,22 @@ fn expr_parser<'a>() -> impl Parser<'a, &'a str, Expr, extra::Err<Rich<'a, char>
             },
         );
 
-        let term = factor.clone().foldl(
-            just("+")
-                .padded()
-                .to(Op::Add)
-                .or(just("-").padded().to(Op::Sub))
-                .then(factor.clone())
-                .repeated(),
-            |lhs, (op, rhs)| Expr::Binary {
-                op,
-                lhs: Box::new(lhs),
-                rhs: Box::new(rhs),
-            },
-        );
+        let term = factor
+            .clone()
+            .foldl(
+                just("+")
+                    .padded()
+                    .to(Op::Add)
+                    .or(just("-").padded().to(Op::Sub))
+                    .then(factor.clone())
+                    .repeated(),
+                |lhs, (op, rhs)| Expr::Binary {
+                    op,
+                    lhs: Box::new(lhs),
+                    rhs: Box::new(rhs),
+                },
+            )
+            .boxed();
 
         let comparison = term.clone().foldl(
             just("==")
@@ -147,18 +150,21 @@ fn expr_parser<'a>() -> impl Parser<'a, &'a str, Expr, extra::Err<Rich<'a, char>
                 .or(comparison.clone())
         });
 
-        let logic_and = logic_not.clone().foldl(
-            just("and")
-                .padded()
-                .to(Op::And)
-                .then(logic_not.clone())
-                .repeated(),
-            |lhs, (op, rhs)| Expr::Binary {
-                op,
-                lhs: Box::new(lhs),
-                rhs: Box::new(rhs),
-            },
-        );
+        let logic_and = logic_not
+            .clone()
+            .foldl(
+                just("and")
+                    .padded()
+                    .to(Op::And)
+                    .then(logic_not.clone())
+                    .repeated(),
+                |lhs, (op, rhs)| Expr::Binary {
+                    op,
+                    lhs: Box::new(lhs),
+                    rhs: Box::new(rhs),
+                },
+            )
+            .boxed();
 
         let logic_or = logic_and.clone().foldl(
             just("or")
