@@ -16,7 +16,7 @@ use vm::run;
 
 pub use {
     api::ExternalApi,
-    ast::{Direction, Op, Side, Type, UnaryOp},
+    ast::{Direction, Expr, Op, Side, Statement, Type, UnaryOp},
     error::Error,
     vm::{Event, EventIterator},
 };
