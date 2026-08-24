@@ -1,4 +1,4 @@
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
     Print(Expr),
     Move(Expr),
@@ -13,7 +13,7 @@ pub enum Statement {
     Send(Expr),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
     Uint(u32),
     Float(f32),
