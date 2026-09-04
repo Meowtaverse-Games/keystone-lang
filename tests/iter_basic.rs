@@ -54,6 +54,25 @@ fn statement_multiple() {
 }
 
 #[test]
+fn infinite_place_loop_can_be_consumed_lazily() {
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
+    let mut iter = eval(
+        r#"
+        while true
+            place down
+        end
+        "#,
+        api,
+    )
+    .expect("eval failed");
+
+    assert_eq!(next(&mut iter), Event::Tick);
+    for _ in 0..4 {
+        assert_eq!(next(&mut iter), Event::Place(Direction::Down));
+    }
+}
+
+#[test]
 fn if_single() {
     let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
     let mut iter = eval(

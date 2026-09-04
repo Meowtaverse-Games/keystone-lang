@@ -19,7 +19,7 @@ impl ExternalApi for MyApi {
 #[test]
 fn unexpected_type() {
     let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
-    let cases: [(&str, &str, Error); 18] = [
+    let cases: [(&str, &str, Error); 22] = [
         (
             "move <String>",
             r#"move "Hello""#,
@@ -117,6 +117,38 @@ fn unexpected_type() {
             },
         ),
         (
+            "place <String>",
+            r#"place "Hello""#,
+            Error::UnexpectedType {
+                statement: String::from("Place"),
+                found_type: Type::String,
+            },
+        ),
+        (
+            "place <Uint>",
+            r#"place 30"#,
+            Error::UnexpectedType {
+                statement: String::from("Place"),
+                found_type: Type::Uint,
+            },
+        ),
+        (
+            "place <Float>",
+            r#"place 5.0"#,
+            Error::UnexpectedType {
+                statement: String::from("Place"),
+                found_type: Type::Float,
+            },
+        ),
+        (
+            "place <Boolean>",
+            r#"place true"#,
+            Error::UnexpectedType {
+                statement: String::from("Place"),
+                found_type: Type::Boolean,
+            },
+        ),
+        (
             "send <Float>",
             r#"send 2.5"#,
             Error::UnexpectedType {
@@ -171,6 +203,14 @@ fn unexpected_type() {
             assert_eq!(e, expected, "{case}");
         }
     }
+}
+
+#[test]
+fn place_requires_a_direction_expression() {
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
+    let result = eval_all("place", api);
+
+    assert!(matches!(result, Err(Error::SyntaxError { .. })));
 }
 
 #[test]
@@ -800,7 +840,7 @@ fn too_large_number() {
 #[test]
 fn reserved_words() {
     let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
-    let cases: [(&str, &str, Error); 23] = [
+    let cases: [(&str, &str, Error); 24] = [
         (
             "print = <Expr>",
             r#"print = "print""#,
@@ -843,6 +883,15 @@ fn reserved_words() {
             Error::SyntaxError {
                 messages: vec![String::from(
                     "reserved word 'dig' cannot be used as a variable.",
+                )],
+            },
+        ),
+        (
+            "place = <Expr>",
+            r#"place = "place""#,
+            Error::SyntaxError {
+                messages: vec![String::from(
+                    "reserved word 'place' cannot be used as a variable.",
                 )],
             },
         ),

@@ -10,6 +10,7 @@ pub enum Event {
     Move(Direction),
     Turn(Side),
     Dig(Direction),
+    Place(Direction),
     Sleep(f32),
     Let,
     Tick,
@@ -242,6 +243,13 @@ impl EventIterator {
             Statement::Dig(x) => {
                 if let Expr::Direction(d) = exec(x)? {
                     Ok(Some(Event::Dig(d)))
+                } else {
+                    unreachable!()
+                }
+            }
+            Statement::Place(x) => {
+                if let Expr::Direction(d) = exec(x)? {
+                    Ok(Some(Event::Place(d)))
                 } else {
                     unreachable!()
                 }

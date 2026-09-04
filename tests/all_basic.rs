@@ -72,6 +72,31 @@ fn statement() {
 }
 
 #[test]
+fn place_directions() {
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
+    let result = eval_all(
+        r#"
+        place up
+        place down
+        place left
+        place right
+        "#,
+        api,
+    )
+    .expect("eval failed");
+
+    assert_eq!(
+        result,
+        vec![
+            Event::Place(Direction::Up),
+            Event::Place(Direction::Down),
+            Event::Place(Direction::Left),
+            Event::Place(Direction::Right),
+        ]
+    );
+}
+
+#[test]
 fn super_statement() {
     let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
     let cases: [(&str, &str, Vec<Event>); 4] = [

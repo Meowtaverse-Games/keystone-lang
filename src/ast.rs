@@ -4,6 +4,7 @@ pub enum Statement {
     Move(Expr),
     Turn(Expr),
     Dig(Expr),
+    Place(Expr),
     Let(String, Expr),
     Loop(Expr, Vec<Statement>),
     While(Expr, Vec<Statement>),

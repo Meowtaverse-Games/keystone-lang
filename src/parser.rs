@@ -209,6 +209,10 @@ fn statement_parser<'a>() -> impl Parser<'a, &'a str, Statement, extra::Err<Rich
             .padded_by(new_space())
             .ignore_then(expr_parser())
             .map(Statement::Dig);
+        let place = just("place")
+            .padded_by(new_space())
+            .ignore_then(expr_parser())
+            .map(Statement::Place);
         let sleep = just("sleep")
             .padded_by(new_space())
             .ignore_then(expr_parser())
@@ -281,6 +285,7 @@ fn statement_parser<'a>() -> impl Parser<'a, &'a str, Statement, extra::Err<Rich
             .or(_move)
             .or(turn)
             .or(dig)
+            .or(place)
             .or(sleep)
             .or(send)
             .or(receive)
@@ -308,6 +313,7 @@ fn is_reserved(s: &str) -> bool {
             | "move"
             | "turn"
             | "dig"
+            | "place"
             | "sleep"
             | "if"
             | "loop"
