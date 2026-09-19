@@ -18,6 +18,7 @@ pub use {
     api::ExternalApi,
     ast::{Callee, Direction, Expr, Op, Side, Statement, Type, UnaryOp},
     error::Error,
+    typecheck::expr_check,
     vm::{Event, EventIterator},
 };
 

@@ -2,7 +2,7 @@ use crate::ast::{Callee, Expr, Op, Statement, Type};
 use crate::context::TypeContext;
 use crate::error::*;
 
-fn expr_check(input: &Expr, ctx: &mut TypeContext) -> Result<Type, Error> {
+pub fn expr_check(input: &Expr, ctx: &mut TypeContext) -> Result<Type, Error> {
     match input {
         Expr::String(_) => Ok(Type::String),
         Expr::Uint(_) => Ok(Type::Uint),
