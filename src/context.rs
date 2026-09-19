@@ -1,7 +1,7 @@
 use crate::ast::{Expr, Type};
 use std::collections::HashMap;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TypeContext {
     pub vars: HashMap<String, Type>,
 }
