@@ -9,7 +9,7 @@ mod vm;
 use std::sync::Arc;
 
 use chumsky::prelude::*;
-use context::{RuntimeContext, TypeContext};
+use context::RuntimeContext;
 use parser::program_parser as parser;
 use typecheck::check;
 use vm::run;
@@ -17,6 +17,7 @@ use vm::run;
 pub use {
     api::ExternalApi,
     ast::{Callee, Direction, Expr, Op, Side, Statement, Type, UnaryOp},
+    context::TypeContext,
     error::Error,
     typecheck::expr_check,
     vm::{Event, EventIterator},
