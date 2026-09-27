@@ -30,6 +30,9 @@ pub enum Error {
         expected: u8,
         got: u8,
     },
+    CommandNotAllowed {
+        command: String,
+    },
     ZeroDivisionError,
     TooLargeNumber,
 }
