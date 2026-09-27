@@ -78,6 +78,10 @@ fn validate_statements(
                 require_command("dig", allowed_commands)?;
                 validate_expression(expression, allowed_commands)?;
             }
+            Statement::Place(expression) => {
+                require_command("place", allowed_commands)?;
+                validate_expression(expression, allowed_commands)?;
+            }
             Statement::Loop(expression, body) | Statement::While(expression, body) => {
                 validate_expression(expression, allowed_commands)?;
                 validate_statements(body, allowed_commands)?;
