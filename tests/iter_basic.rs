@@ -302,3 +302,22 @@ fn stateful_api() {
     assert_eq!(next(&mut iter), Event::Move(Direction::Up)); //frame 5 : is_touched()
     assert!(iter.next().is_none());
 }
+
+#[test]
+fn infinite_empty_loop() {
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
+    let mut iter = eval(
+        r#"
+        while true
+        end
+    "#,
+        Arc::clone(&api),
+    )
+    .expect("eval failed");
+
+    let events: Vec<Event> = iter.by_ref().map(|r| r.unwrap()).take(100).collect();
+
+    assert_eq!(events.len(), 100);
+
+    assert!(events.iter().all(|e| *e == Event::Tick));
+}

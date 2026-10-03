@@ -232,7 +232,6 @@ fn statement_parser<'a>() -> impl Parser<'a, &'a str, Statement, extra::Err<Rich
                     .padded_by(new_space())
                     .then_ignore(text::newline())
                     .repeated()
-                    .at_least(1)
                     .collect::<Vec<_>>(),
             )
             .then_ignore(text::newline().or_not())
@@ -249,7 +248,6 @@ fn statement_parser<'a>() -> impl Parser<'a, &'a str, Statement, extra::Err<Rich
                     .padded_by(new_space())
                     .then_ignore(text::newline())
                     .repeated()
-                    .at_least(1)
                     .collect::<Vec<_>>(),
             )
             .then_ignore(text::newline().or_not())
@@ -266,7 +264,6 @@ fn statement_parser<'a>() -> impl Parser<'a, &'a str, Statement, extra::Err<Rich
                     .padded_by(new_space())
                     .then_ignore(text::newline())
                     .repeated()
-                    .at_least(1)
                     .collect::<Vec<_>>(),
             )
             .then_ignore(text::newline().or_not())

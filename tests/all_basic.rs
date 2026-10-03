@@ -74,7 +74,7 @@ fn statement() {
 #[test]
 fn super_statement() {
     let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
-    let cases: [(&str, &str, Vec<Event>); 4] = [
+    let cases: [(&str, &str, Vec<Event>); 8] = [
         (
             r#"
             if true
@@ -142,6 +142,60 @@ fn super_statement() {
                 Event::Print("White".to_owned()),
                 Event::Let,
             ],
+        ),
+        (
+            r#"
+            if true
+            end
+        "#,
+            r#"
+            if true
+            end
+        "#,
+            vec![Event::Tick],
+        ),
+        (
+            r#"
+            if false
+            end
+        "#,
+            r#"
+            if false
+            end
+        "#,
+            vec![Event::Tick],
+        ),
+        (
+            r#"
+            loop <Number>
+            end
+        "#,
+            r#"
+            loop 8
+            end
+        "#,
+            vec![
+                Event::Tick,
+                Event::Tick,
+                Event::Tick,
+                Event::Tick,
+                Event::Tick,
+                Event::Tick,
+                Event::Tick,
+                Event::Tick,
+                Event::Tick,
+            ],
+        ),
+        (
+            r#"
+            while false
+            end
+        "#,
+            r#"
+            while false
+            end
+        "#,
+            vec![Event::Tick],
         ),
     ];
 

@@ -356,6 +356,9 @@ impl Iterator for EventIterator {
                     }
                     *current += 1;
                     let body_clone = Arc::clone(body);
+                    if body_clone.is_empty() {
+                        return Some(Ok(Event::Tick));
+                    }
                     self.stack.push(ExecutionFrame::Statement {
                         statements: body_clone,
                         index: 0,
@@ -366,6 +369,9 @@ impl Iterator for EventIterator {
                     let body_clone = Arc::clone(body);
                     let cond_res = expr(condition.clone(), &mut self.ctx, Arc::clone(&self.api));
                     if let Ok(Expr::Boolean(true)) = cond_res {
+                        if body_clone.is_empty() {
+                            return Some(Ok(Event::Tick));
+                        }
                         self.stack.push(ExecutionFrame::Statement {
                             statements: body_clone,
                             index: 0,
