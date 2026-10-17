@@ -24,7 +24,11 @@ pub use {
     vm::{Event, EventIterator},
 };
 
-fn parse_and_check(input: &str) -> Result<Vec<Statement>, Error> {
+/// Parses source code into statements without type checking.
+///
+/// Useful for tools that convert between code and other representations (e.g. a block editor),
+/// where ill-typed but syntactically valid programs should still be representable.
+pub fn parse(input: &str) -> Result<Vec<Statement>, Error> {
     let parsed = parser().parse(input.trim());
     let Some(parsed) = parsed.output() else {
         let mut msg: Vec<String> = Vec::new();
@@ -33,9 +37,14 @@ fn parse_and_check(input: &str) -> Result<Vec<Statement>, Error> {
         }
         return Err(Error::SyntaxError { messages: msg });
     };
+    Ok(parsed.to_owned())
+}
+
+fn parse_and_check(input: &str) -> Result<Vec<Statement>, Error> {
+    let parsed = parse(input)?;
     let mut type_ctx = TypeContext::new();
     check(&parsed, &mut type_ctx)?;
-    Ok(parsed.to_owned())
+    Ok(parsed)
 }
 
 /// Rejects stone-specific commands and sensors that are absent from `allowed_commands`.
