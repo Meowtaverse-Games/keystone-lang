@@ -27,9 +27,19 @@ fn expr_parser<'a>() -> impl Parser<'a, &'a str, Expr, extra::Err<Rich<'a, char>
 
         let uint = text::digits(10)
             .to_slice()
-            .map(|s: &str| Expr::Uint(s.parse().unwrap()));
+            .map(|s: &str| s.parse::<u32>().map(Expr::Uint));
 
-        let number = float.or(uint);
+        // Validate after choosing the number format so a failed float alternative cannot
+        // hide the integer overflow diagnostic with an "expected '.'" error.
+        let number = float.map(Ok).or(uint).try_map(|number, span| {
+            number.map_err(|_| {
+                // SyntaxError exposes custom errors as strings, so retain the span there too.
+                Rich::custom(
+                    span,
+                    format!("number literal is too large (max 4294967295) at {span}"),
+                )
+            })
+        });
 
         let string = just::<char, &str, extra::Err<Rich<'a, char>>>('"')
             .ignore_then(
