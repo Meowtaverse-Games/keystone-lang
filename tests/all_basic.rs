@@ -19,7 +19,7 @@ impl ExternalApi for MyApi {
 #[test]
 fn statement() {
     let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
-    let cases: [(&str, &str, Vec<Event>); 11] = [
+    let cases: [(&str, &str, Vec<Event>); 12] = [
         (
             "print <String>",
             r#"print "Hello""#,
@@ -62,6 +62,7 @@ fn statement() {
             vec![Event::Dig(Direction::Back)],
         ),
         ("sleep <Float>", r#"sleep 1.2"#, vec![Event::Sleep(1.2)]),
+        ("sleep <Uint>", r#"sleep 2"#, vec![Event::Sleep(2.0)]),
         ("<Var> = <Expr>", r#"name = "Taro""#, vec![Event::Let]),
     ];
 

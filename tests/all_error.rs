@@ -19,7 +19,7 @@ impl ExternalApi for MyApi {
 #[test]
 fn unexpected_type() {
     let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
-    let cases: [(&str, &str, Error); 18] = [
+    let cases: [(&str, &str, Error); 20] = [
         (
             "move <String>",
             r#"move "Hello""#,
@@ -113,6 +113,22 @@ fn unexpected_type() {
             r#"dig true"#,
             Error::UnexpectedType {
                 statement: String::from("Dig"),
+                found_type: Type::Boolean,
+            },
+        ),
+        (
+            "sleep <String>",
+            r#"sleep "Hello""#,
+            Error::UnexpectedType {
+                statement: String::from("Sleep"),
+                found_type: Type::String,
+            },
+        ),
+        (
+            "sleep <Boolean>",
+            r#"sleep true"#,
+            Error::UnexpectedType {
+                statement: String::from("Sleep"),
                 found_type: Type::Boolean,
             },
         ),

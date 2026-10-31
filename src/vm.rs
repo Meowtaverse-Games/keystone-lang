@@ -254,13 +254,11 @@ impl EventIterator {
                     unreachable!()
                 }
             }
-            Statement::Sleep(x) => {
-                if let Expr::Float(f) = exec(x)? {
-                    Ok(Some(Event::Sleep(f)))
-                } else {
-                    unreachable!()
-                }
-            }
+            Statement::Sleep(x) => match exec(x)? {
+                Expr::Float(f) => Ok(Some(Event::Sleep(f))),
+                Expr::Uint(u) => Ok(Some(Event::Sleep(u as f32))),
+                _ => unreachable!(),
+            },
             Statement::Loop(x, body) => {
                 if let Expr::Uint(count) = exec(x)? {
                     if count > 0 {

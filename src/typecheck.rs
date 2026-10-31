@@ -123,7 +123,9 @@ pub fn check(input: &[Statement], ctx: &mut TypeContext) -> Result<(), Error> {
             Statement::Turn(x) => ensure_type(expr_check(x, ctx)?, Type::Direction, "Turn")?,
             Statement::Dig(x) => ensure_type(expr_check(x, ctx)?, Type::Direction, "Dig")?,
             Statement::Place(x) => ensure_type(expr_check(x, ctx)?, Type::Direction, "Place")?,
-            Statement::Sleep(x) => ensure_type(expr_check(x, ctx)?, Type::Float, "Sleep")?,
+            Statement::Sleep(x) => {
+                ensure_types(expr_check(x, ctx)?, &[Type::Float, Type::Uint], "Sleep")?
+            }
             Statement::Let(s, x) => {
                 let t = expr_check(x, ctx)?;
                 ctx.set(s, t);

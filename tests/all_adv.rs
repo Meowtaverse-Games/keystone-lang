@@ -480,6 +480,33 @@ fn switch_direction() {
 }
 
 #[test]
+fn sleep_uint_seconds() {
+    let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
+
+    assert_eq!(
+        eval_all(
+            r#"
+        n = 1
+        loop 2
+            sleep n
+            n = n+1
+        end
+    "#,
+            api
+        )
+        .expect("eval failed"),
+        vec![
+            Event::Let,
+            Event::Tick,
+            Event::Sleep(1.0),
+            Event::Let,
+            Event::Sleep(2.0),
+            Event::Let,
+        ]
+    );
+}
+
+#[test]
 fn sleep_timer_step() {
     let api: Arc<dyn ExternalApi + Send + Sync> = Arc::new(MyApi);
 
