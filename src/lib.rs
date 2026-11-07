@@ -91,6 +91,14 @@ fn validate_statements(
                 require_command("place", allowed_commands)?;
                 validate_expression(expression, allowed_commands)?;
             }
+            Statement::Send(expression) => {
+                require_command("send", allowed_commands)?;
+                validate_expression(expression, allowed_commands)?;
+            }
+            Statement::Receive(expression) => {
+                require_command("receive", allowed_commands)?;
+                validate_expression(expression, allowed_commands)?;
+            }
             Statement::Loop(expression, body) | Statement::While(expression, body) => {
                 validate_expression(expression, allowed_commands)?;
                 validate_statements(body, allowed_commands)?;
@@ -101,9 +109,7 @@ fn validate_statements(
             }
             Statement::Print(expression)
             | Statement::Turn(expression)
-            | Statement::Let(_, expression)
-            | Statement::Receive(expression)
-            | Statement::Send(expression) => validate_expression(expression, allowed_commands)?,
+            | Statement::Let(_, expression) => validate_expression(expression, allowed_commands)?,
         }
     }
     Ok(())
