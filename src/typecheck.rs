@@ -138,9 +138,20 @@ pub fn check(input: &[Statement], ctx: &mut TypeContext) -> Result<(), Error> {
                 ensure_type(expr_check(x, ctx)?, Type::Boolean, "While")?;
                 check(y, ctx)?;
             }
-            Statement::If(x, y) => {
+            Statement::If(x, y, None) => {
                 ensure_type(expr_check(x, ctx)?, Type::Boolean, "If")?;
                 check(y, ctx)?;
+            }
+            Statement::If(x, y, Some(z)) => {
+                ensure_type(expr_check(x, ctx)?, Type::Boolean, "If")?;
+                let mut then_ctx = ctx.clone();
+                let mut else_ctx = ctx.clone();
+                check(y, &mut then_ctx)?;
+                check(z, &mut else_ctx)?;
+                then_ctx
+                    .vars
+                    .retain(|name, typ| else_ctx.get(name) == Some(typ));
+                *ctx = then_ctx;
             }
             Statement::Send(x) => {
                 ensure_types(expr_check(x, ctx)?, &[Type::Uint, Type::String], "Send")?

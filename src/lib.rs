@@ -103,9 +103,12 @@ fn validate_statements(
                 validate_expression(expression, allowed_commands)?;
                 validate_statements(body, allowed_commands)?;
             }
-            Statement::If(expression, body) => {
+            Statement::If(expression, body, else_body) => {
                 validate_expression(expression, allowed_commands)?;
                 validate_statements(body, allowed_commands)?;
+                if let Some(else_body) = else_body {
+                    validate_statements(else_body, allowed_commands)?;
+                }
             }
             Statement::Print(expression)
             | Statement::Turn(expression)

@@ -280,11 +280,12 @@ impl EventIterator {
                 });
                 Ok(None)
             }
-            Statement::If(x, body) => {
+            Statement::If(x, body, else_body) => {
                 if let Expr::Boolean(condition) = exec(x)? {
-                    if condition {
+                    let branch = if condition { Some(body) } else { else_body };
+                    if let Some(statements) = branch {
                         self.stack.push(ExecutionFrame::Statement {
-                            statements: Arc::new(body),
+                            statements: Arc::new(statements),
                             index: 0,
                         });
                     }
