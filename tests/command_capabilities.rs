@@ -17,6 +17,8 @@ fn rejects_disallowed_commands_inside_unexecuted_bodies() {
         ("while false\n    move right\nend", "move"),
         ("if false\n    print is_touched()\nend", "is_touched"),
         ("if false\n    print is_empty(left)\nend", "is_empty"),
+        ("if false\n    send \"go\"\nend", "send"),
+        ("while false\n    receive \"go\"\nend", "receive"),
     ];
 
     for (source, command) in cases {
@@ -35,8 +37,6 @@ fn leaves_general_language_constructs_available() {
     let source = r#"
         label = "dig"
         count = rand(3)
-        send label
-        receive "stone-1"
         turn left
         print count
     "#;
@@ -52,6 +52,8 @@ fn accepts_only_the_commands_explicitly_allowed() {
                 move right
                 sleep 1.0
                 dig down
+                send "go"
+                receive "back"
             end
         end
     "#;
@@ -59,7 +61,15 @@ fn accepts_only_the_commands_explicitly_allowed() {
     assert_eq!(
         validate_allowed_commands(
             source,
-            &allowed(&["move", "sleep", "dig", "is_touched", "is_empty"]),
+            &allowed(&[
+                "move",
+                "sleep",
+                "dig",
+                "is_touched",
+                "is_empty",
+                "send",
+                "receive",
+            ]),
         ),
         Ok(())
     );
