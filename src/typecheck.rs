@@ -128,19 +128,29 @@ pub fn check(input: &[Statement], ctx: &mut TypeContext) -> Result<(), Error> {
             }
             Statement::Let(s, x) => {
                 let t = expr_check(x, ctx)?;
+                if let Some(from) = ctx.get(s)
+                    && *from != t
+                {
+                    return Err(Error::TypeChanged {
+                        name: s.to_owned(),
+                        from: from.clone(),
+                        to: t,
+                    });
+                }
                 ctx.set(s, t);
             }
+            // A body may run zero times, so variables it introduces stay inside it.
             Statement::Loop(x, y) => {
                 ensure_type(expr_check(x, ctx)?, Type::Uint, "Loop")?;
-                check(y, ctx)?;
+                check(y, &mut ctx.clone())?;
             }
             Statement::While(x, y) => {
                 ensure_type(expr_check(x, ctx)?, Type::Boolean, "While")?;
-                check(y, ctx)?;
+                check(y, &mut ctx.clone())?;
             }
             Statement::If(x, y, None) => {
                 ensure_type(expr_check(x, ctx)?, Type::Boolean, "If")?;
-                check(y, ctx)?;
+                check(y, &mut ctx.clone())?;
             }
             Statement::If(x, y, Some(z)) => {
                 ensure_type(expr_check(x, ctx)?, Type::Boolean, "If")?;

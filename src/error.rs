@@ -25,6 +25,12 @@ pub enum Error {
     NameError {
         name: String,
     },
+    /// A variable keeps the type of its first assignment.
+    TypeChanged {
+        name: String,
+        from: Type,
+        to: Type,
+    },
     ArgError {
         called: String,
         expected: u8,
