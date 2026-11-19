@@ -8,7 +8,7 @@ pub enum Statement {
     Let(String, Expr),
     Loop(Expr, Vec<Statement>),
     While(Expr, Vec<Statement>),
-    If(Expr, Vec<Statement>),
+    If(Expr, Vec<Statement>, Option<Vec<Statement>>),
     Sleep(Expr),
     Receive(Expr),
     Send(Expr),

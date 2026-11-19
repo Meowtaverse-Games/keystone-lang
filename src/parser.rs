@@ -264,22 +264,38 @@ fn statement_parser<'a>() -> impl Parser<'a, &'a str, Statement, extra::Err<Rich
             .then_ignore(new_space())
             .then_ignore(just("end").ignored())
             .map(|(cond, body)| Statement::While(cond, body));
-        let _if = just("if")
+        let branch_body = statement
+            .clone()
             .padded_by(new_space())
-            .ignore_then(expr_parser())
-            .then_ignore(newline())
-            .then(
-                statement
-                    .clone()
-                    .padded_by(new_space())
-                    .then_ignore(text::newline())
-                    .repeated()
-                    .collect::<Vec<_>>(),
-            )
+            .then_ignore(text::newline())
+            .repeated()
+            .collect::<Vec<_>>()
             .then_ignore(text::newline().or_not())
             .then_ignore(new_space())
-            .then_ignore(just("end").ignored())
-            .map(|(cond, body)| Statement::If(cond, body));
+            .boxed();
+        let if_tail = recursive(|if_tail| {
+            let else_if = text::keyword("else")
+                .then(new_space())
+                .then(text::keyword("if"))
+                .then(new_space())
+                .ignore_then(if_tail)
+                .map(|nested| Some(vec![nested]));
+            let else_block = text::keyword("else")
+                .then(new_space())
+                .then(newline())
+                .ignore_then(branch_body.clone())
+                .then_ignore(just("end"))
+                .map(Some);
+            let no_else = just("end").to(None);
+
+            expr_parser()
+                .then_ignore(newline())
+                .then(branch_body.clone())
+                .then(else_if.or(else_block).or(no_else))
+                .map(|((cond, body), else_body)| Statement::If(cond, body, else_body))
+                .boxed()
+        });
+        let _if = just("if").padded_by(new_space()).ignore_then(if_tail);
         let send = just("send")
             .padded_by(new_space())
             .ignore_then(expr_parser())
@@ -323,6 +339,7 @@ fn is_reserved(s: &str) -> bool {
             | "place"
             | "sleep"
             | "if"
+            | "else"
             | "loop"
             | "while"
             | "end"

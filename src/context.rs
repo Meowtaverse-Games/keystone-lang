@@ -1,4 +1,5 @@
 use crate::ast::{Expr, Type};
+use crate::error::Error;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
@@ -38,10 +39,25 @@ impl RuntimeContext {
         self.vars.insert(name.to_string(), expr);
     }
 
-    pub fn get(&self, name: &str) -> &Expr {
-        match self.vars.get(name) {
-            Some(x) => x,
-            None => unreachable!("undefined variable"),
-        }
+    /// The type checker should make this unreachable; report it rather than panic if not.
+    pub fn get(&self, name: &str) -> Result<&Expr, Error> {
+        self.vars.get(name).ok_or_else(|| Error::NameError {
+            name: name.to_owned(),
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn reading_an_unset_runtime_variable_is_an_error() {
+        assert_eq!(
+            RuntimeContext::new().get("y"),
+            Err(Error::NameError {
+                name: "y".to_string()
+            })
+        );
     }
 }
