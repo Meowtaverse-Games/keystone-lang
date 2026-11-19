@@ -30,7 +30,7 @@ fn expr(
         Expr::Float(f) => Ok(Expr::Float(f)),
         Expr::Boolean(b) => Ok(Expr::Boolean(b)),
         Expr::Direction(d) => Ok(Expr::Direction(d)),
-        Expr::Var(s) => Ok(ctx.get(&s).clone()),
+        Expr::Var(s) => ctx.get(&s).cloned(),
         Expr::Call { callee, args } => match callee {
             Callee::IsTouched => Ok(Expr::Boolean(api.is_touched())),
             Callee::IsEmpty => {
