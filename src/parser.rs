@@ -1,5 +1,5 @@
 use crate::ast::*;
-use chumsky::{prelude::*, text::newline};
+use chumsky::prelude::*;
 
 fn callee_parser<'a>() -> impl Parser<'a, &'a str, Callee, extra::Err<Rich<'a, char>>> {
     text::ident::<&'a str, extra::Err<Rich<'a, char>>>().try_map(|name, span| match name {
@@ -203,6 +203,18 @@ fn new_space<'a>() -> impl Parser<'a, &'a str, (), extra::Err<Rich<'a, char>>> +
 
 fn statement_parser<'a>() -> impl Parser<'a, &'a str, Statement, extra::Err<Rich<'a, char>>> {
     recursive(|statement| {
+        let body = blank_lines()
+            .ignore_then(
+                statement
+                    .clone()
+                    .padded_by(new_space())
+                    .then_ignore(line_end())
+                    .then_ignore(blank_lines())
+                    .repeated()
+                    .collect::<Vec<_>>(),
+            )
+            .then_ignore(new_space())
+            .boxed();
         let print = just("print")
             .padded_by(new_space())
             .ignore_then(expr_parser())
@@ -235,44 +247,17 @@ fn statement_parser<'a>() -> impl Parser<'a, &'a str, Statement, extra::Err<Rich
         let _loop = just("loop")
             .padded_by(new_space())
             .ignore_then(expr_parser())
-            .then_ignore(newline())
-            .then(
-                statement
-                    .clone()
-                    .padded_by(new_space())
-                    .then_ignore(text::newline())
-                    .repeated()
-                    .collect::<Vec<_>>(),
-            )
-            .then_ignore(text::newline().or_not())
-            .then_ignore(new_space())
+            .then_ignore(line_end())
+            .then(body.clone())
             .then_ignore(just("end").ignored())
             .map(|(count, body)| Statement::Loop(count, body));
         let _while = just("while")
             .padded_by(new_space())
             .ignore_then(expr_parser())
-            .then_ignore(newline())
-            .then(
-                statement
-                    .clone()
-                    .padded_by(new_space())
-                    .then_ignore(text::newline())
-                    .repeated()
-                    .collect::<Vec<_>>(),
-            )
-            .then_ignore(text::newline().or_not())
-            .then_ignore(new_space())
+            .then_ignore(line_end())
+            .then(body.clone())
             .then_ignore(just("end").ignored())
             .map(|(cond, body)| Statement::While(cond, body));
-        let branch_body = statement
-            .clone()
-            .padded_by(new_space())
-            .then_ignore(text::newline())
-            .repeated()
-            .collect::<Vec<_>>()
-            .then_ignore(text::newline().or_not())
-            .then_ignore(new_space())
-            .boxed();
         let if_tail = recursive(|if_tail| {
             let else_if = text::keyword("else")
                 .then(new_space())
@@ -281,16 +266,15 @@ fn statement_parser<'a>() -> impl Parser<'a, &'a str, Statement, extra::Err<Rich
                 .ignore_then(if_tail)
                 .map(|nested| Some(vec![nested]));
             let else_block = text::keyword("else")
-                .then(new_space())
-                .then(newline())
-                .ignore_then(branch_body.clone())
+                .then(line_end())
+                .ignore_then(body.clone())
                 .then_ignore(just("end"))
                 .map(Some);
             let no_else = just("end").to(None);
 
             expr_parser()
-                .then_ignore(newline())
-                .then(branch_body.clone())
+                .then_ignore(line_end())
+                .then(body.clone())
                 .then(else_if.or(else_block).or(no_else))
                 .map(|((cond, body), else_body)| Statement::If(cond, body, else_body))
                 .boxed()
@@ -320,8 +304,12 @@ fn statement_parser<'a>() -> impl Parser<'a, &'a str, Statement, extra::Err<Rich
     })
 }
 
-fn blank_line<'a>() -> impl Parser<'a, &'a str, (), extra::Err<Rich<'a, char>>> + Copy {
+fn line_end<'a>() -> impl Parser<'a, &'a str, (), extra::Err<Rich<'a, char>>> + Copy {
     new_space().then_ignore(text::newline()).ignored()
+}
+
+fn blank_lines<'a>() -> impl Parser<'a, &'a str, (), extra::Err<Rich<'a, char>>> + Copy {
+    line_end().repeated()
 }
 
 fn is_reserved(s: &str) -> bool {
@@ -359,10 +347,8 @@ fn is_reserved(s: &str) -> bool {
 
 pub fn program_parser<'a>() -> impl Parser<'a, &'a str, Vec<Statement>, extra::Err<Rich<'a, char>>>
 {
-    let sep = blank_line().or(text::newline().ignored());
-
     statement_parser()
-        .separated_by(sep.repeated())
+        .separated_by(blank_lines())
         .allow_trailing()
         .collect()
         .then_ignore(end())
